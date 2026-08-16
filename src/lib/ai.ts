@@ -176,6 +176,7 @@ export function improveScript(
 export interface TitlesAndHooks {
   titles: string[]
   hooks: string[]
+  hashtags: string[]
 }
 
 export async function suggestTitlesAndHooks(content: string): Promise<TitlesAndHooks> {
@@ -186,24 +187,31 @@ export async function suggestTitlesAndHooks(content: string): Promise<TitlesAndH
         content:
           'Você é um estrategista de conteúdo para vídeos. Responda SEMPRE em português do Brasil ' +
           'e SOMENTE com JSON válido, sem markdown, no formato: ' +
-          '{"titulos": ["..."], "ganchos": ["..."]}',
+          '{"titulos": ["..."], "ganchos": ["..."], "hashtags": ["..."]}',
       },
       {
         role: 'user',
         content:
-          'Com base neste roteiro, sugira 5 títulos de vídeo (curtos, com curiosidade ou benefício claro) ' +
-          'e 5 ganchos de abertura (frases de até 15 palavras para os primeiros 3 segundos). ' +
-          'JSON no formato {"titulos": [...], "ganchos": [...]}. Roteiro:\n\n' +
+          'Com base neste roteiro, sugira 5 títulos de vídeo (curtos, com curiosidade ou benefício claro), ' +
+          '5 ganchos de abertura (frases de até 15 palavras para os primeiros 3 segundos) e ' +
+          '12 hashtags para o vídeo (mix de amplas, de nicho e de plataforma, todas com #, sem espaços). ' +
+          'JSON no formato {"titulos": [...], "ganchos": [...], "hashtags": [...]}. Roteiro:\n\n' +
           content.slice(0, 6000),
       },
     ],
-    { temperature: 0.8, maxTokens: 1200 },
+    { temperature: 0.8, maxTokens: 1400 },
   )
-  const data = extractJson(raw) as { titulos?: unknown; ganchos?: unknown }
+  const data = extractJson(raw) as { titulos?: unknown; ganchos?: unknown; hashtags?: unknown }
   const titles = Array.isArray(data.titulos) ? data.titulos.map(String) : []
   const hooks = Array.isArray(data.ganchos) ? data.ganchos.map(String) : []
-  if (!titles.length && !hooks.length) {
+  const hashtags = Array.isArray(data.hashtags)
+    ? data.hashtags
+        .map(String)
+        .map((h) => `#${h.replace(/^#/, '').replace(/\s+/g, '').trim()}`)
+        .filter((h) => h.length > 1)
+    : []
+  if (!titles.length && !hooks.length && !hashtags.length) {
     throw new Error('A IA não retornou sugestões válidas. Tente novamente.')
   }
-  return { titles, hooks }
+  return { titles, hooks, hashtags }
 }

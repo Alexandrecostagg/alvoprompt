@@ -471,7 +471,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
           {activeTab === 'titles' && (
             <>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Gera 5 títulos e 5 ganchos de abertura para o roteiro atual. Clique para copiar.
+                Gera 5 títulos, 5 ganchos de abertura e 12 hashtags para o roteiro atual. Clique para copiar.
               </p>
               {suggesting ? (
                 <p className="py-8 text-center text-sm" style={{ color: 'var(--muted)' }}>
@@ -517,9 +517,31 @@ export default function AiPanel({ tab }: AiPanelProps) {
                       </li>
                     ))}
                   </ul>
+                  {suggestions.hashtags.length > 0 && (
+                    <>
+                      <h3 className="pt-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+                        Hashtags
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {suggestions.hashtags.map((tag, i) => (
+                          <button
+                            key={i}
+                            onClick={() => copyItem(`tag${i}`, tag)}
+                            className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                            style={{
+                              borderColor: copiedIndex === `tag${i}` ? 'var(--ok)' : 'var(--border)',
+                              color: copiedIndex === `tag${i}` ? 'var(--ok)' : 'var(--accent-2)',
+                            }}
+                          >
+                            {copiedIndex === `tag${i}` ? '✓' : tag}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
-                primaryBtn('✨ Sugerir títulos e ganchos', handleSuggest, !currentScript?.content.trim() || busy)
+                primaryBtn('✨ Sugerir títulos, ganchos e hashtags', handleSuggest, !currentScript?.content.trim() || busy)
               )}
             </>
           )}
