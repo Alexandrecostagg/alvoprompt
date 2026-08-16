@@ -115,36 +115,40 @@ src/
 └── store/useAppStore.ts          # Zustand
 ```
 
-## Serviços em nuvem (opcionais, planos gratuitos)
+## Serviços em nuvem (planos gratuitos)
 
-O app roda 100% local/offline por padrão. Dois serviços opcionais podem ser ativados:
+### Firebase (sincronização de roteiros) — ✅ configurado
 
-### Firebase (sincronização de roteiros)
+Projeto **`alvoprompt`** já criado e ligado (config em `.env.local`):
+- **Firestore** criado na região `southamerica-east1` com regras (`.env` → exigem login)
+- **App web** registrado; Auth **E-mail/Senha** precisa ser ativado em:
+  `console.firebase.google.com/project/alvoprompt/authentication` → E-mail/Senha → habilitar → Salvar
 
-1. Crie um projeto no [Console Firebase](https://console.firebase.google.com) (plano Spark, gratuito).
-2. **Adicionar app → Web** e copie as credenciais para `.env.local` (veja `.env.example`).
-3. **Authentication → Sign-in method** → ative **E-mail/senha**.
-4. **Firestore Database** → crie o banco (modo teste; em produção use regras autenticadas).
+Com o Auth ativo, o botão **☁️ Entrar** no topo cria conta/loga; os roteiros são enviados
+para a coleção `scripts` e alterações remotas são baixadas automaticamente
+(`src/lib/firebase.ts` e `src/lib/sync.ts`).
 
-Com isso, o botão **☁️ Entrar** no topo permite criar conta/logar; os roteiros são
-enviados para a coleção `scripts` e alterações feitas em outros dispositivos são
-baixadas automaticamente (código em `src/lib/firebase.ts` e `src/lib/sync.ts`).
+### Cloudflare (transcrição Whisper, TTS, tradução e mídia) — ✅ configurado
 
-### Cloudflare Worker (transcrição Whisper, TTS/dublagem, tradução)
+- **Worker `alvoprompt-api`** publicado: https://alvoprompt-api.alexandrecostagg.workers.dev
+- **R2 bucket `alvoprompt-media`** criado (binding `alvoprompt_media` no Worker)
+- Endpoints: `POST /transcribe` (Whisper), `POST /tts` (MeloTTS), `POST /translate` (m2m100),
+  `PUT/GET/DELETE /media/:key` (R2)
+- Código em `api/transcribe`; cliente em `src/lib/cloudflare.ts`
 
-Scaffold em `api/transcribe` usando **Workers AI** (10 mil neurônios/dia no plano gratuito):
+## App mobile (Capacitor — iOS e Android)
+
+O web app é empacotado nativamente com Capacitor (sem reescrever nada):
 
 ```bash
-cd api/transcribe
-npm i -D wrangler
-npx wrangler dev --port 8787    # modo local
-npx wrangler deploy             # publicar
+npm run android   # build + sync + abre o Android Studio
+npm run ios       # build + sync + abre o Xcode
 ```
 
-Endpoints: `POST /transcribe` (Whisper, multipart `audio`+`lang`), `POST /tts`
-(MeloTTS → WAV) e `POST /translate` (m2m100). O app aponta para
-`http://localhost:8787` por padrão; para produção, defina `VITE_CLOUDFLARE_API_BASE`.
-Cliente pronto em `src/lib/cloudflare.ts`.
+- Permissões já configuradas: câmera + microfone (iOS `Info.plist`, Android `AndroidManifest.xml`)
+- Plugins: Filesystem, Share, StatusBar, SplashScreen, App
+- **iOS**: Web Speech não existe no Safari → o modo Voz usa Whisper via Cloudflare no mobile
+- **Android**: Web Speech + Gamepad API funcionam nativamente
 
 ## Roadmap
 
