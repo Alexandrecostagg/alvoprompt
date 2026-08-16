@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 import { getFirebaseAsync } from './firebase'
-import { getScripts, saveScript, deleteScript } from './db'
+import { db as localDb, getScripts, saveScript, deleteScript } from './db'
 import type { Script } from './types'
 import { useAppStore } from '../store/useAppStore'
 
@@ -64,17 +64,23 @@ export function startSync(
               if (change.type === 'added' || change.type === 'modified') {
                 const existing = (await getScripts()).find((s) => s.id === id)
                 if (existing && existing.updatedAt === remote.updatedAt) continue
-                await saveScript({
+                const script = {
+                  id,
                   title: remote.title ?? '',
                   content: remote.content ?? '',
                   tags: remote.tags,
                   updatedAt: remote.updatedAt,
                   createdAt: existing?.createdAt ?? remote.updatedAt,
-                })
+                }
+                if (existing) await saveScript(script)
+                else await localDb.scripts.add(script)
               }
             }
             await useAppStore.getState().loadScripts()
-          })().catch((_err) => onState('error', null))
+          })().catch((err) => {
+            console.error('Firestore snapshot handler error', err)
+            onState('error', null)
+          })
         },
         (err) => {
           console.error('Firestore sync error', err)

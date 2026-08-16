@@ -64,11 +64,13 @@ export default function SyncControl() {
   }
 
   const label =
-    state === 'synced' || state === 'connecting'
-      ? '☁️ sincronizando…'
-      : state === 'error'
-        ? '☁️ erro de sync'
-        : '☁️ Entrar'
+    state === 'synced'
+      ? '☁️ sincronizado'
+      : state === 'connecting'
+        ? '☁️ sincronizando…'
+        : state === 'error'
+          ? '☁️ erro de sync'
+          : '☁️ Entrar'
 
   return (
     <div className="relative">
