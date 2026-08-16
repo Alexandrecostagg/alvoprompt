@@ -72,6 +72,12 @@ export default function VideoEditor() {
   const [reframe, setReframe] = useState(false)
   const facePathRef = useRef<FaceSample[] | null>(null)
   const [promptText, setPromptText] = useState('')
+  const [introEnabled, setIntroEnabled] = useState(false)
+  const [introText, setIntroText] = useState('')
+  const [introSeconds, setIntroSeconds] = useState(3)
+  const [outroEnabled, setOutroEnabled] = useState(false)
+  const [outroText, setOutroText] = useState('')
+  const [outroSeconds, setOutroSeconds] = useState(3)
   const [shorts, setShorts] = useState<{ url: string; start: number; end: number }[]>([])
   const [shortsProgress, setShortsProgress] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
@@ -274,6 +280,12 @@ export default function VideoEditor() {
         captions: cues,
         theme: CAPTION_THEMES.find((t) => t.key === themeKey) ?? CAPTION_THEMES[0]!,
         highlightWords,
+        intro: introEnabled && introText.trim()
+          ? { text: introText.trim(), seconds: introSeconds }
+          : undefined,
+        outro: outroEnabled && outroText.trim()
+          ? { text: outroText.trim(), seconds: outroSeconds }
+          : undefined,
         logo: logo
           ? { image: logo, position: logoPosition, widthPct: logoWidth, opacity: 0.9 }
           : undefined,
@@ -350,6 +362,12 @@ export default function VideoEditor() {
           captions: burnCaptions ? [{ start: seg.start, end: seg.end, text: seg.text }] : [],
           theme,
           highlightWords,
+          intro: introEnabled && introText.trim()
+            ? { text: introText.trim(), seconds: introSeconds }
+            : undefined,
+          outro: outroEnabled && outroText.trim()
+            ? { text: outroText.trim(), seconds: outroSeconds }
+            : undefined,
           logo: logoOpt,
           music: musicOpt,
           motion,
@@ -647,6 +665,73 @@ export default function VideoEditor() {
               </div>
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
                 A música é mixada com o áudio da gravação durante a exportação.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+              Intro & outro de marca
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                <input
+                  type="checkbox"
+                  checked={introEnabled}
+                  onChange={(e) => setIntroEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-cyan-400"
+                />
+                Intro
+                <input
+                  value={introText}
+                  onChange={(e) => setIntroText(e.target.value)}
+                  placeholder="Texto do intro (título do vídeo)"
+                  disabled={!introEnabled}
+                  className="flex-1 rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white outline-none disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)' }}
+                />
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={introSeconds}
+                  onChange={(e) => setIntroSeconds(Number(e.target.value))}
+                  disabled={!introEnabled}
+                  className="w-14 rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white outline-none disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)' }}
+                  title="Segundos"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                <input
+                  type="checkbox"
+                  checked={outroEnabled}
+                  onChange={(e) => setOutroEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-cyan-400"
+                />
+                Outro
+                <input
+                  value={outroText}
+                  onChange={(e) => setOutroText(e.target.value)}
+                  placeholder="Texto do outro (CTA, canal, etc.)"
+                  disabled={!outroEnabled}
+                  className="flex-1 rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white outline-none disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)' }}
+                />
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={outroSeconds}
+                  onChange={(e) => setOutroSeconds(Number(e.target.value))}
+                  disabled={!outroEnabled}
+                  className="w-14 rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white outline-none disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)' }}
+                  title="Segundos"
+                />
+              </div>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+                Cards com o gradiente da marca aparecem no início (intro) e no fim (outro) do vídeo.
               </p>
             </div>
           </section>

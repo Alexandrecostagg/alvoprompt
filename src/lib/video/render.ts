@@ -55,6 +55,11 @@ export interface CaptionCue {
   text: string
 }
 
+export interface IntroOutro {
+  text: string
+  seconds: number
+}
+
 export type LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 export interface LogoOverlay {
@@ -109,6 +114,8 @@ export interface RenderConfig {
   captions: CaptionCue[]
   theme: CaptionTheme
   highlightWords?: boolean
+  intro?: IntroOutro
+  outro?: IntroOutro
   logo?: LogoOverlay
   music?: BackgroundMusic
   motion?: MotionPreset
@@ -292,6 +299,56 @@ function drawLogo(
   ctx.restore()
 }
 
+function drawBrandCard(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  w: number,
+  h: number,
+  mode: 'intro' | 'outro',
+) {
+  const grad = ctx.createLinearGradient(0, 0, w, h)
+  grad.addColorStop(0, '#8B5CF6')
+  grad.addColorStop(1, '#22D3EE')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, w, h)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const fontSize = Math.min(Math.round(h * 0.07), Math.round(w / 12))
+  ctx.font = `700 ${fontSize}px system-ui, -apple-system, sans-serif`
+  ctx.fillStyle = '#ffffff'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'
+  ctx.lineWidth = fontSize * 0.08
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let cur = ''
+  for (const word of words) {
+    const trial = cur ? `${cur} ${word}` : word
+    if (ctx.measureText(trial).width > w * 0.85 && cur) {
+      lines.push(cur)
+      cur = word
+    } else {
+      cur = trial
+    }
+  }
+  if (cur) lines.push(cur)
+  const lh = fontSize * 1.2
+  const startY = h / 2 - ((lines.length - 1) * lh) / 2
+  for (let i = 0; i < lines.length; i++) {
+    const y = startY + i * lh
+    ctx.strokeText(lines[i]!, w / 2, y)
+    ctx.fillText(lines[i]!, w / 2, y)
+  }
+
+  const sub = mode === 'intro' ? 'Seu texto no alvo, seus olhos na câmera.' : 'Obrigado por assistir!'
+  ctx.font = `${Math.round(fontSize * 0.4)}px system-ui, -apple-system, sans-serif`
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+  ctx.lineWidth = 1
+  ctx.strokeText(sub, w / 2, startY + lines.length * lh + fontSize * 0.9)
+  ctx.fillText(sub, w / 2, startY + lines.length * lh + fontSize * 0.9)
+}
+
 const MIME_PREFERRED = [
   'video/webm;codecs=vp9,opus',
   'video/webm;codecs=vp8,opus',
@@ -473,6 +530,14 @@ export async function renderVideo(cfg: RenderConfig): Promise<Blob> {
           canvas.width,
           canvas.height,
         )
+      }
+      const first = cfg.keepRanges[0]
+      const last = cfg.keepRanges[cfg.keepRanges.length - 1]
+      if (cfg.intro && first && t >= first.start && t - first.start <= cfg.intro.seconds) {
+        drawBrandCard(ctx, cfg.intro.text, canvas.width, canvas.height, 'intro')
+      }
+      if (cfg.outro && last && last.end - t >= 0 && last.end - t <= cfg.outro.seconds) {
+        drawBrandCard(ctx, cfg.outro.text, canvas.width, canvas.height, 'outro')
       }
       if (cfg.theme.key !== 'none') {
         const cue = findCue(cfg.captions, t)
