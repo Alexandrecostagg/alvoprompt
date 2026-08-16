@@ -1,0 +1,13 @@
+name = "alvoprompt-api"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Workers AI (plano gratuito: 10k neurônios/dia)
+[ai]
+binding = "AI"
+
+# Uso local: npx wrangler dev --port 8787
+# Publicar: npx wrangler deploy
+# CORS liberado para qualquer origem (desenvolvimento)
+[vars]
+CORS_ORIGIN = "*"

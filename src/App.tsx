@@ -5,6 +5,7 @@ import ScriptEditor from './components/editor/ScriptEditor'
 import PrompterView from './components/prompter/PrompterView'
 import VideoEditor from './components/editor/VideoEditor'
 import ControlRoom from './components/control/ControlRoom'
+import SyncControl from './components/SyncControl'
 
 function Logo() {
   return (
@@ -127,6 +128,7 @@ export default function App() {
           >
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
+          <SyncControl />
         </div>
       </header>
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">

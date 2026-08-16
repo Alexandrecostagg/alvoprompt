@@ -109,6 +109,37 @@ src/
 └── store/useAppStore.ts          # Zustand
 ```
 
+## Serviços em nuvem (opcionais, planos gratuitos)
+
+O app roda 100% local/offline por padrão. Dois serviços opcionais podem ser ativados:
+
+### Firebase (sincronização de roteiros)
+
+1. Crie um projeto no [Console Firebase](https://console.firebase.google.com) (plano Spark, gratuito).
+2. **Adicionar app → Web** e copie as credenciais para `.env.local` (veja `.env.example`).
+3. **Authentication → Sign-in method** → ative **E-mail/senha**.
+4. **Firestore Database** → crie o banco (modo teste; em produção use regras autenticadas).
+
+Com isso, o botão **☁️ Entrar** no topo permite criar conta/logar; os roteiros são
+enviados para a coleção `scripts` e alterações feitas em outros dispositivos são
+baixadas automaticamente (código em `src/lib/firebase.ts` e `src/lib/sync.ts`).
+
+### Cloudflare Worker (transcrição Whisper, TTS/dublagem, tradução)
+
+Scaffold em `api/transcribe` usando **Workers AI** (10 mil neurônios/dia no plano gratuito):
+
+```bash
+cd api/transcribe
+npm i -D wrangler
+npx wrangler dev --port 8787    # modo local
+npx wrangler deploy             # publicar
+```
+
+Endpoints: `POST /transcribe` (Whisper, multipart `audio`+`lang`), `POST /tts`
+(MeloTTS → WAV) e `POST /translate` (m2m100). O app aponta para
+`http://localhost:8787` por padrão; para produção, defina `VITE_CLOUDFLARE_API_BASE`.
+Cliente pronto em `src/lib/cloudflare.ts`.
+
 ## Roadmap
 
 - [x] **Fase 1 (MVP)** — prompter core: VoiceTrack, rolagem fixa/manual, modo espelho, câmera + gravação, biblioteca local
