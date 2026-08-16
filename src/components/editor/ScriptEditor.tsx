@@ -1,0 +1,187 @@
+import { useEffect, useRef, useState } from 'react'
+import { useAppStore } from '../../store/useAppStore'
+import { estimateDurationMinutes, wordCount } from '../../lib/text'
+import { formatElapsed } from '../../hooks/useRecorder'
+import { IMPORTABLE_EXT, extractTextFromFile, fileNameFromImport } from '../../lib/importers'
+import AiPanel from '../ai/AiPanel'
+import ScriptAnalysis from './ScriptAnalysis'
+
+export default function ScriptEditor() {
+  const { currentScript, upsertScript, setView, settings, aiPanelTab, openAiPanel, closeAiPanel } =
+    useAppStore()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const savedRef = useRef(currentScript)
+  const [dirty, setDirty] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
+
+  useEffect(() => {
+    savedRef.current = currentScript
+    setDirty(false)
+  }, [currentScript])
+
+  useEffect(() => {
+    if (aiPanelTab == null) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeAiPanel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [aiPanelTab, closeAiPanel])
+
+  if (!currentScript) {
+    return (
+      <div className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+        <p style={{ color: 'var(--muted)' }}>Nenhum roteiro selecionado.</p>
+        <button
+          onClick={() => setView('library')}
+          className="mt-4 rounded-lg border px-4 py-2 text-sm"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          Voltar para a biblioteca
+        </button>
+      </div>
+    )
+  }
+
+  const words = wordCount(currentScript.content)
+  const minutes = estimateDurationMinutes(words, settings.wpm)
+
+  const handleSave = async () => {
+    if (!currentScript) return
+    await upsertScript(currentScript)
+    setDirty(false)
+  }
+
+  const importFile = async (file: File) => {
+    try {
+      const content = await extractTextFromFile(file)
+      const next = { ...currentScript, title: fileNameFromImport(file.name) || currentScript.title, content }
+      useAppStore.getState().selectScript(next)
+      setDirty(true)
+    } catch (err) {
+      window.alert(`Não foi possível importar o arquivo: ${(err as Error).message}`)
+    }
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <button
+          onClick={() => setView('library')}
+          className="rounded-lg border px-3 py-1.5 text-sm"
+          style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+        >
+          ← Biblioteca
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="rounded-lg border px-3 py-1.5 text-sm"
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+          >
+            Importar
+          </button>
+          <button
+            onClick={() => openAiPanel(aiPanelTab ?? 'generate')}
+            className="rounded-lg px-3 py-1.5 text-sm font-semibold"
+            style={{
+              background: 'var(--accent-2)',
+              color: '#0e0a1a',
+            }}
+          >
+            ✨ IA
+          </button>
+          <button
+            onClick={() => setShowAnalysis((v) => !v)}
+            className="rounded-lg border px-3 py-1.5 text-sm"
+            style={{
+              borderColor: showAnalysis ? 'var(--accent)' : 'var(--border)',
+              color: showAnalysis ? 'var(--accent)' : 'var(--text)',
+            }}
+            title="Análise, palavras-chave e remoção de vícios de linguagem"
+          >
+            📊 Analisar
+          </button>
+          <button
+            onClick={handleSave}
+            className="rounded-lg border px-3 py-1.5 text-sm font-medium"
+            style={{
+              borderColor: dirty ? 'var(--warn)' : 'var(--border)',
+              color: dirty ? 'var(--warn)' : 'var(--muted)',
+            }}
+          >
+            {dirty ? 'Salvar (Cmd+S)' : 'Salvo'}
+          </button>
+          <button
+            onClick={() => setView('prompter')}
+            disabled={words === 0}
+            className="rounded-lg px-4 py-1.5 text-sm font-semibold text-black disabled:opacity-40"
+            style={{ background: 'var(--accent)' }}
+          >
+            Abrir no Prompter →
+          </button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept={IMPORTABLE_EXT}
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) void importFile(file)
+            e.target.value = ''
+          }}
+        />
+      </div>
+
+      <input
+        value={currentScript.title}
+        onChange={(e) => {
+          useAppStore.getState().selectScript({ ...currentScript, title: e.target.value })
+          setDirty(true)
+        }}
+        placeholder="Título do roteiro"
+        className="mb-3 w-full rounded-lg border bg-transparent px-4 py-2.5 text-lg font-medium text-white outline-none focus:ring-2"
+        style={{ borderColor: 'var(--border)' }}
+      />
+
+      <textarea
+        value={currentScript.content}
+        onChange={(e) => {
+          useAppStore.getState().selectScript({ ...currentScript, content: e.target.value })
+          setDirty(true)
+        }}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            e.preventDefault()
+            handleSave()
+          }
+        }}
+        placeholder="Cole ou digite aqui o texto que você vai ler..."
+        className="min-h-[50vh] w-full flex-1 resize-none rounded-lg border p-4 text-base leading-relaxed text-white outline-none focus:ring-2"
+        style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
+      />
+
+      <div className="mt-3 flex items-center justify-between text-xs" style={{ color: 'var(--muted)' }}>
+        <span>
+          {words} palavras · duração estimada ~{formatElapsed(minutes * 60)} a {settings.wpm} wpm
+        </span>
+        <span>Dica: organize o roteiro em parágrafos curtos. O VoiceTrack segue sua fala.</span>
+      </div>
+
+      {showAnalysis && (
+        <ScriptAnalysis
+          content={currentScript.content}
+          wpm={settings.wpm}
+          onApplyClean={(text) => {
+            useAppStore.getState().selectScript({ ...currentScript, content: text })
+            setDirty(true)
+          }}
+          onClose={() => setShowAnalysis(false)}
+        />
+      )}
+
+      {aiPanelTab != null && <AiPanel tab={aiPanelTab} />}
+    </div>
+  )
+}

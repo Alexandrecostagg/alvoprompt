@@ -1,0 +1,696 @@
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useAppStore } from '../../store/useAppStore'
+import { splitWords } from '../../lib/text'
+import { usePrompterEngine } from '../../hooks/usePrompterEngine'
+import { useVoiceTrack } from '../../hooks/useVoiceTrack'
+import { useRecorder, formatElapsed } from '../../hooks/useRecorder'
+import { useTranscription } from '../../hooks/useTranscription'
+import { buildSrt, type CaptionUtterance } from '../../lib/srt'
+import { SRT_LANGUAGES, translateSrt } from '../../lib/translate'
+import SettingsPanel from './SettingsPanel'
+import AspectGuide from './AspectGuide'
+
+const ACTIVE_WORD_CLASS = 'word-active'
+const WORD_CLASS = 'prompter-word'
+
+export default function PrompterView() {
+  const currentScript = useAppStore((s) => s.currentScript)
+  const settings = useAppStore((s) => s.settings)
+  const updateSettings = useAppStore((s) => s.updateSettings)
+  const setView = useAppStore((s) => s.setView)
+
+  const [showSettings, setShowSettings] = useState(false)
+  const [showResult, setShowResult] = useState(false)
+  const [progressPct, setProgressPct] = useState(0)
+  const [srtText, setSrtText] = useState<string | null>(null)
+  const [transLangIdx, setTransLangIdx] = useState(0)
+  const [translatedSrt, setTranslatedSrt] = useState<string | null>(null)
+  const [translating, setTranslating] = useState(false)
+  const [transError, setTransError] = useState<string | null>(null)
+  const transAbortRef = useRef<AbortController | null>(null)
+
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+  const spacerTopRef = useRef<HTMLDivElement>(null)
+  const spacerBottomRef = useRef<HTMLDivElement>(null)
+  const spansRef = useRef<(HTMLSpanElement | null)[]>([])
+  const offsetsRef = useRef<number[]>([])
+  const lineHRef = useRef(0)
+  const activeIdxRef = useRef(-1)
+  const pausedByVoiceRef = useRef(false)
+  const lastPctAtRef = useRef(0)
+
+  const content = currentScript?.content ?? ''
+
+  const words = useMemo(() => splitWords(content), [content])
+
+  const segments = useMemo(() => {
+    const parts = content.split(/(\s+)/)
+    const segs: { text: string; wordIndex: number | null }[] = []
+    let wi = 0
+    for (const part of parts) {
+      if (part === '') continue
+      if (/\s/.test(part[0]!)) segs.push({ text: part, wordIndex: null })
+      else segs.push({ text: part, wordIndex: wi++ })
+    }
+    return segs
+  }, [content])
+
+  const updateActiveWord = useCallback((idx: number) => {
+    if (activeIdxRef.current === idx) return
+    const prev = activeIdxRef.current
+    if (prev >= 0 && spansRef.current[prev]) {
+      spansRef.current[prev]!.classList.remove(ACTIVE_WORD_CLASS)
+    }
+    if (idx >= 0 && spansRef.current[idx]) {
+      spansRef.current[idx]!.classList.add(ACTIVE_WORD_CLASS)
+    }
+    activeIdxRef.current = idx
+  }, [])
+
+  const applyFrame = useCallback(
+    (fraction: number) => {
+      const viewport = viewportRef.current
+      const inner = innerRef.current
+      if (!viewport || !inner) return
+      const offsets = offsetsRef.current
+      const n = offsets.length
+      if (n === 0) return
+      const pos = Math.max(0, Math.min(n - 1, fraction * (n - 1)))
+      const idx = Math.floor(pos)
+      const t = pos - idx
+      const y =
+        idx < n - 1 ? offsets[idx]! + (offsets[idx + 1]! - offsets[idx]!) * t : offsets[n - 1]!
+      const target = viewport.clientHeight / 2 - (y + lineHRef.current / 2)
+      const scale = settings.mirror ? -1 : 1
+      inner.style.transform = `translate3d(0, ${target}px, 0) scaleX(${scale})`
+      updateActiveWord(settings.highlightWords ? Math.round(pos) : -1)
+      const now = performance.now()
+      if (now - lastPctAtRef.current > 250 || fraction === 0 || fraction === 1) {
+        lastPctAtRef.current = now
+        setProgressPct(Math.round(fraction * 100))
+      }
+    },
+    [settings.mirror, settings.highlightWords, updateActiveWord],
+  )
+
+  const engine = usePrompterEngine({
+    mode: settings.mode,
+    wordCount: words.length,
+    wpm: settings.wpm,
+    onFrame: applyFrame,
+  })
+
+  const statusRef = useRef({ state: engine.state, fraction: 0 })
+  statusRef.current = { state: engine.state, fraction: engine.fraction.current }
+
+  useEffect(() => {
+    const setPrompterState = useAppStore.getState().setPrompterState
+    const id = window.setInterval(() => setPrompterState(statusRef.current), 300)
+    setPrompterState(statusRef.current)
+    return () => {
+      window.clearInterval(id)
+      useAppStore.getState().setPrompterState(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    const onSeek = (e: Event) => {
+      const f = (e as CustomEvent<number>).detail
+      if (typeof f === 'number' && Number.isFinite(f)) engine.seekToFraction(f)
+    }
+    window.addEventListener('pf-seek', onSeek)
+    return () => window.removeEventListener('pf-seek', onSeek)
+  }, [engine])
+
+  const handleSpeechActivity = useCallback(
+    (active: boolean) => {
+      const state = useAppStore.getState()
+      if (!state.settings.cameraOn && state.settings.mode !== 'voice') return
+      if (active) {
+        if (pausedByVoiceRef.current) {
+          pausedByVoiceRef.current = false
+          engine.start()
+        }
+      } else if (engine.state === 'running' && state.settings.mode === 'voice') {
+        pausedByVoiceRef.current = true
+        engine.pause()
+      }
+    },
+    [engine],
+  )
+
+  const captionRef = useRef<CaptionUtterance[]>([])
+  const recStartRef = useRef(0)
+
+  const pushCaption = useCallback((text: string) => {
+    if (!recStartRef.current) return
+    captionRef.current.push({ text, at: (performance.now() - recStartRef.current) / 1000 })
+  }, [])
+
+  const voice = useVoiceTrack({
+    words,
+    enabled:
+      settings.mode === 'voice' && (engine.state === 'running' || engine.state === 'paused'),
+    lang: settings.voiceLang,
+    sensitivity: settings.voiceSensitivity,
+    onWordMatch: (i) => engine.seekToWord(i),
+    onSpeechActivity: handleSpeechActivity,
+    onUtterance: (text) => pushCaption(text),
+  })
+
+  const recorder = useRecorder()
+  const transcription = useTranscription()
+
+  const stopRecording = useCallback(() => {
+    recorder.stop()
+    setSrtText(buildSrt(captionRef.current) || null)
+    setShowResult(true)
+  }, [recorder])
+
+  const handleTranslate = useCallback(async () => {
+    if (!srtText || translating) return
+    setTransError(null)
+    setTranslatedSrt(null)
+    setTranslating(true)
+    const controller = new AbortController()
+    transAbortRef.current = controller
+    try {
+      const result = await translateSrt(srtText, SRT_LANGUAGES[transLangIdx]!, {
+        signal: controller.signal,
+        onToken: (t) => setTranslatedSrt(t),
+      })
+      setTranslatedSrt(result)
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') setTransError((err as Error).message)
+    } finally {
+      setTranslating(false)
+      transAbortRef.current = null
+    }
+  }, [srtText, translating, transLangIdx])
+
+  useEffect(() => () => transAbortRef.current?.abort(), [])
+
+  const measure = useCallback(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    lineHRef.current = settings.fontSize * settings.lineHeight
+    const half = viewport.clientHeight / 2
+    if (spacerTopRef.current) spacerTopRef.current.style.height = `${half}px`
+    if (spacerBottomRef.current) spacerBottomRef.current.style.height = `${half}px`
+    const offsets: number[] = []
+    for (const s of spansRef.current) {
+      if (s) offsets.push(s.offsetTop)
+    }
+    offsetsRef.current = offsets
+  }, [settings.fontSize, settings.lineHeight])
+
+  useLayoutEffect(() => {
+    activeIdxRef.current = -1
+    measure()
+    applyFrame(0)
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const ro = new ResizeObserver(() => {
+      measure()
+      applyFrame(engine.fraction.current)
+    })
+    ro.observe(viewport)
+    return () => ro.disconnect()
+  }, [words, settings.fontSize, settings.lineHeight, settings.letterSpacing, measure, applyFrame, engine.fraction])
+
+  useEffect(() => {
+    if (settings.cameraOn) void recorder.enable()
+    else recorder.disable()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.cameraOn])
+
+  useEffect(() => {
+    if (engine.state === 'done' && !settings.openMic && recorder.isRecording) {
+      stopRecording()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine.state, settings.openMic, recorder.isRecording])
+
+  const { supported: transSupported, start: transStart, stop: transStop } = transcription
+
+  useEffect(() => {
+    if (settings.mode === 'voice') return
+    if (!recorder.isRecording) {
+      transStop()
+      return
+    }
+    if (!transSupported) return
+    transStart(settings.voiceLang, (text) => pushCaption(text))
+    return () => transStop()
+  }, [recorder.isRecording, settings.mode, transSupported, settings.voiceLang, pushCaption, transStart, transStop])
+
+  const handlePrimary = useCallback(() => {
+    if (engine.state === 'running') {
+      pausedByVoiceRef.current = false
+      engine.pause()
+      return
+    }
+    if (engine.state === 'done') {
+      engine.stop()
+      return
+    }
+    voice.reset()
+    engine.start()
+    if (settings.mode === 'voice' && voice.supported) voice.start()
+  }, [engine, voice, settings.mode])
+
+  const refs = useRef({ handlePrimary, showSettings, settings, updateSettings, setView })
+  refs.current = { handlePrimary, showSettings, settings, updateSettings, setView }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
+      ) {
+        return
+      }
+      const { handlePrimary: primary, showSettings: open, settings: s, updateSettings: up, setView: nav } =
+        refs.current
+      switch (e.key) {
+        case ' ':
+          e.preventDefault()
+          primary()
+          break
+        case 'Escape':
+          if (open) setShowSettings(false)
+          else nav('library')
+          break
+        case 'ArrowUp':
+          engine.nudge(-0.02)
+          break
+        case 'ArrowDown':
+          engine.nudge(0.02)
+          break
+        case 'm':
+        case 'M':
+          up({ mirror: !s.mirror })
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [engine])
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void document.documentElement.requestFullscreen()
+  }, [])
+
+  if (!currentScript || words.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4">
+        <p className="text-lg text-white">Este roteiro está vazio.</p>
+        <button
+          onClick={() => setView('editor')}
+          className="rounded-lg px-4 py-2 text-sm font-semibold text-black"
+          style={{ background: 'var(--accent)' }}
+        >
+          Ir para o editor
+        </button>
+      </div>
+    )
+  }
+
+  const statusLabel = (() => {
+    if (engine.state === 'idle') return 'Pronto'
+    if (engine.state === 'done') return 'Concluído'
+    if (engine.state === 'paused') {
+      return pausedByVoiceRef.current ? 'Pausado · aguardando sua voz' : 'Pausado'
+    }
+    if (settings.mode === 'voice') return voice.listening ? 'Ouvindo sua voz...' : 'Rolando (voz)'
+    return 'Rolando'
+  })()
+
+  const cameraBlock = settings.cameraOn && (
+    <div
+      className="relative w-full overflow-hidden"
+      style={{ height: '38%' }}
+    >
+      <video
+        ref={recorder.attachVideo}
+        autoPlay
+        playsInline
+        muted
+        className="h-full w-full object-cover"
+        style={{ transform: 'scaleX(-1)' }}
+      />
+      {recorder.status === 'requesting' && (
+        <div className="absolute inset-0 flex items-center justify-center text-sm" style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+          Solicitando câmera...
+        </div>
+      )}
+      {recorder.status === 'error' && (
+        <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm" style={{ background: 'rgba(0,0,0,0.6)', color: 'var(--danger)' }}>
+          {recorder.error}
+        </div>
+      )}
+      {settings.eyeContactDot && (
+        <div
+          className="absolute left-1/2 top-1/2 z-20 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90"
+          style={{ background: 'rgba(34,211,238,0.85)', boxShadow: '0 0 10px rgba(0,0,0,0.7)' }}
+          title="Mirinha de contato visual"
+        />
+      )}
+      <AspectGuide ratio={settings.aspectGuide} dimOutside />
+    </div>
+  )
+
+  return (
+    <div className="flex h-full flex-col" style={{ background: settings.bgColor }}>
+      <div
+        className="flex items-center justify-between gap-3 border-b px-4 py-2"
+        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.92)' }}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setView('library')}
+            className="rounded-lg border px-3 py-1 text-sm"
+            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+          >
+            ← Sair
+          </button>
+          <span className="max-w-48 truncate text-sm font-medium text-white sm:max-w-72">
+            {currentScript.title || 'Sem título'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span
+            className="rounded-full px-3 py-1 font-medium"
+            style={{
+              background:
+                engine.state === 'running' ? 'rgba(52,211,153,0.15)' : 'var(--panel)',
+              color: engine.state === 'running' ? 'var(--ok)' : 'var(--muted)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            {statusLabel}
+          </span>
+          {settings.mode === 'voice' && !voice.supported && (
+            <span className="hidden rounded-full border px-3 py-1 sm:inline" style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
+              Reconhecimento de voz indisponível — use modo Fixa
+            </span>
+          )}
+          {voice.error && (
+            <span className="hidden rounded-full border px-3 py-1 md:inline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+              {voice.error}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleFullscreen}
+            className="rounded-lg border px-3 py-1 text-sm"
+            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            title="Tela cheia"
+          >
+            ⛶
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="rounded-lg border px-3 py-1 text-sm"
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+          >
+            ⚙ Ajustes
+          </button>
+        </div>
+      </div>
+
+      {settings.cameraPosition === 'top' && cameraBlock}
+
+      <div ref={viewportRef} className="relative min-h-0 flex-1 overflow-hidden">
+        <div
+          className="pointer-events-none absolute left-0 right-0 top-1/2 z-10 h-px"
+          style={{ background: 'rgba(255,255,255,0.25)' }}
+        />
+        <div
+          ref={innerRef}
+          className="absolute left-0 top-0 w-full will-change-transform"
+          style={{ transform: 'translate3d(0, 50vh, 0)' }}
+        >
+          <div ref={spacerTopRef} />
+          <div
+            style={{
+              padding: '0 max(2rem, 8vw)',
+              fontSize: settings.fontSize,
+              lineHeight: settings.lineHeight,
+              letterSpacing: settings.letterSpacing,
+              fontFamily: settings.fontFamily,
+              color: settings.fontColor,
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {segments.map((seg, i) =>
+              seg.wordIndex == null ? (
+                seg.text
+              ) : (
+                <span
+                  key={i}
+                  ref={(el) => {
+                    spansRef.current[seg.wordIndex!] = el
+                  }}
+                  className={WORD_CLASS}
+                >
+                  {seg.text}
+                </span>
+              ),
+            )}
+          </div>
+          <div ref={spacerBottomRef} />
+        </div>
+        {!settings.cameraOn && <AspectGuide ratio={settings.aspectGuide} dimOutside={false} />}
+      </div>
+
+      {settings.cameraPosition === 'bottom' && cameraBlock}
+
+      <div
+        className="border-t px-4 py-3"
+        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.92)' }}
+      >
+        <div className="mx-auto flex max-w-4xl items-center gap-3">
+          <button
+            onClick={engine.stop}
+            className="rounded-lg border px-3 py-2 text-sm"
+            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            title="Reiniciar"
+          >
+            ⟲
+          </button>
+          <button
+            onClick={handlePrimary}
+            className="rounded-lg px-5 py-2 text-sm font-semibold text-black"
+            style={{ background: engine.state === 'running' ? 'var(--warn)' : 'var(--accent)' }}
+          >
+            {engine.state === 'running' ? '❚❚ Pausar' : '▶ Iniciar'}
+          </button>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
+            <div
+              className="h-full rounded-full transition-[width] duration-200"
+              style={{ width: `${progressPct}%`, background: 'var(--accent)' }}
+            />
+          </div>
+          <span className="w-10 text-right text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
+            {progressPct}%
+          </span>
+          {settings.cameraOn && (
+            <button
+              onClick={() => {
+                if (recorder.isRecording) {
+                  stopRecording()
+                } else {
+                  recStartRef.current = performance.now()
+                  captionRef.current = []
+                  setSrtText(null)
+                  setShowResult(false)
+                  recorder.start()
+                }
+              }}
+              className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+              style={{
+                borderColor: recorder.isRecording ? 'var(--danger)' : 'var(--border)',
+                color: recorder.isRecording ? 'var(--danger)' : 'var(--text)',
+              }}
+            >
+              {recorder.isRecording ? (
+                <>
+                  <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--danger)' }} />
+                  Gravando {formatElapsed(recorder.elapsed)}
+                </>
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full" style={{ background: 'var(--danger)' }} />
+                  Gravar
+                </>
+              )}
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-center text-[11px]" style={{ color: 'var(--muted)' }}>
+          Espaço: iniciar/pausar · ↑↓: ajustar posição · M: espelhar · Esc: sair
+        </p>
+      </div>
+
+      {showSettings && (
+        <SettingsPanel settings={settings} onClose={() => setShowSettings(false)} />
+      )}
+
+      {showResult && recorder.videoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
+          <div
+            className="w-full max-w-2xl rounded-2xl border p-5"
+            style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
+          >
+            <h3 className="mb-3 font-semibold text-white">Gravação concluída</h3>
+            <video src={recorder.videoUrl} controls className="mb-4 w-full rounded-lg" />
+            {srtText && (
+              <div
+                className="mb-4 rounded-lg border p-3"
+                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
+                    Legenda automática gerada
+                  </p>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([srtText], { type: 'text/plain' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `promptflow-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className="rounded-lg px-3 py-1 text-xs font-semibold text-black"
+                    style={{ background: 'var(--accent)' }}
+                  >
+                    Baixar legenda (.srt)
+                  </button>
+                </div>
+                <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white">
+                  {srtText}
+                </pre>
+              </div>
+            )}
+            {srtText && (
+              <div
+                className="mb-4 rounded-lg border p-3"
+                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
+                    Traduzir legenda
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={transLangIdx}
+                      onChange={(e) => {
+                        setTransLangIdx(Number(e.target.value))
+                        setTranslatedSrt(null)
+                      }}
+                      className="rounded-lg border bg-transparent px-2 py-1 text-xs text-white"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      {SRT_LANGUAGES.map((l, i) => (
+                        <option key={l.code} value={i} style={{ background: '#0e1118' }}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </select>
+                    {translating ? (
+                      <button
+                        onClick={() => transAbortRef.current?.abort()}
+                        className="rounded-lg border px-3 py-1 text-xs"
+                        style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+                      >
+                        Cancelar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => void handleTranslate()}
+                        className="rounded-lg px-3 py-1 text-xs font-semibold text-black"
+                        style={{ background: 'var(--accent-2)', color: '#0e0a1a' }}
+                      >
+                        ✨ Traduzir
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {transError && (
+                  <p className="mb-2 rounded-md border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                    {transError}
+                  </p>
+                )}
+                {translatedSrt && (
+                  <>
+                    <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white">
+                      {translatedSrt}
+                    </pre>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          const blob = new Blob([translatedSrt], { type: 'text/plain' })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          a.download = `promptflow-${SRT_LANGUAGES[transLangIdx]!.code}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
+                          a.click()
+                          URL.revokeObjectURL(url)
+                        }}
+                        className="rounded-lg px-3 py-1 text-xs font-semibold text-black"
+                        style={{ background: 'var(--accent)' }}
+                      >
+                        Baixar traduzido ({SRT_LANGUAGES[transLangIdx]!.code})
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowResult(false)}
+                className="rounded-lg border px-4 py-2 text-sm"
+                style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+              >
+                Continuar
+              </button>
+              <button
+                onClick={() => {
+                  if (!recorder.videoBlob || !recorder.videoUrl) return
+                  useAppStore.getState().setRecording({
+                    blob: recorder.videoBlob,
+                    url: recorder.videoUrl,
+                    srt: srtText,
+                    utterances: captionRef.current.slice(),
+                  })
+                  setShowResult(false)
+                  setView('video-editor')
+                }}
+                className="rounded-lg border px-4 py-2 text-sm font-medium"
+                style={{ borderColor: 'var(--accent-2)', color: 'var(--accent-2)' }}
+              >
+                🎬 Editar vídeo
+              </button>
+              <a
+                href={recorder.videoUrl}
+                download={`promptflow-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-black"
+                style={{ background: 'var(--accent)' }}
+              >
+                Baixar vídeo
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
