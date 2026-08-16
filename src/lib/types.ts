@@ -26,6 +26,7 @@ export interface PrompterSettings {
   fontFamily: string
   letterSpacing: number
   mirror: boolean
+  rtl: boolean
   cameraOn: boolean
   cameraPosition: 'top' | 'bottom'
   aspectGuide: AspectGuideRatio
@@ -47,6 +48,7 @@ export const DEFAULT_SETTINGS: PrompterSettings = {
   fontFamily: 'system-ui, sans-serif',
   letterSpacing: 0,
   mirror: false,
+  rtl: false,
   cameraOn: false,
   cameraPosition: 'bottom',
   aspectGuide: 'none',

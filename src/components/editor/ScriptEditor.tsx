@@ -6,8 +6,10 @@ import { IMPORTABLE_EXT, extractTextFromFile, fileNameFromImport } from '../../l
 import AiPanel from '../ai/AiPanel'
 import ScriptAnalysis from './ScriptAnalysis'
 
+const SPEEDS = [100, 130, 150, 180, 200]
+
 export default function ScriptEditor() {
-  const { currentScript, upsertScript, setView, settings, aiPanelTab, openAiPanel, closeAiPanel } =
+  const { currentScript, upsertScript, setView, settings, updateSettings, aiPanelTab, openAiPanel, closeAiPanel } =
     useAppStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef(currentScript)
@@ -167,6 +169,49 @@ export default function ScriptEditor() {
           {words} palavras · duração estimada ~{formatElapsed(minutes * 60)} a {settings.wpm} wpm
         </span>
         <span>Dica: organize o roteiro em parágrafos curtos. O VoiceTrack segue sua fala.</span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+            Duração por velocidade
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {SPEEDS.map((s) => (
+              <button
+                key={s}
+                onClick={() => updateSettings({ wpm: s })}
+                className="rounded-md px-2 py-1 text-[11px] tabular-nums transition-colors"
+                style={{
+                  background: s === settings.wpm ? 'var(--accent)' : 'rgba(0,0,0,0.25)',
+                  color: s === settings.wpm ? 'black' : 'var(--text)',
+                }}
+                title="Clique para definir esta velocidade"
+              >
+                {s} wpm · {formatElapsed(estimateDurationMinutes(words, s) * 60)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-8 w-px" style={{ background: 'var(--border)' }} />
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+            Para terminar em
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 5].map((t) => (
+              <button
+                key={t}
+                onClick={() => updateSettings({ targetMinutes: t, mode: 'timed' })}
+                className="rounded-md px-2 py-1 text-[11px] tabular-nums transition-colors"
+                style={{ background: 'rgba(0,0,0,0.25)', color: 'var(--text)' }}
+                title="Abre no modo tempo-alvo do prompter"
+              >
+                {t} min · ≈{Math.max(1, Math.round(words / t))} wpm
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {showAnalysis && (

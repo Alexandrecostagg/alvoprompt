@@ -106,6 +106,7 @@ export interface RenderConfig {
   keepRanges: RenderRange[]
   captions: CaptionCue[]
   theme: CaptionTheme
+  highlightWords?: boolean
   logo?: LogoOverlay
   music?: BackgroundMusic
   motion?: MotionPreset
@@ -219,34 +220,53 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 function drawCaption(
   ctx: CanvasRenderingContext2D,
-  text: string,
+  cue: CaptionCue,
   theme: CaptionTheme,
   w: number,
   h: number,
+  t: number,
+  highlight: boolean,
 ) {
   const size = Math.round((h * theme.fontSizePct) / 100)
   if (size < 10) return
+  const text = cue.text.trim()
+  const words = text.split(/\s+/).filter(Boolean)
   const fontSize = Math.min(size, Math.round(w / (text.length * 0.6)))
   ctx.font = `700 ${fontSize}px system-ui, -apple-system, sans-serif`
-  ctx.textAlign = 'center'
+  ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  const x = w / 2
+  const total = ctx.measureText(text).width
+  const x = w / 2 - total / 2
   const y = h - Math.max(28, fontSize * 1.1)
+  let activeIdx = -1
+  if (highlight && words.length > 0 && cue.end > cue.start) {
+    activeIdx = Math.min(
+      words.length - 1,
+      Math.max(0, Math.floor(((t - cue.start) / (cue.end - cue.start)) * words.length)),
+    )
+  }
   if (theme.background) {
     const padX = fontSize * 0.5
-    const bw = ctx.measureText(text).width + padX * 2
     const bh = fontSize * 1.7
     ctx.fillStyle = theme.background
-    roundRect(ctx, x - bw / 2, y - bh / 2, bw, bh, fontSize * 0.3)
+    roundRect(ctx, x - padX, y - bh / 2, total + padX * 2, bh, fontSize * 0.3)
     ctx.fill()
   } else if (theme.strokeWidth > 0) {
     ctx.lineJoin = 'round'
     ctx.strokeStyle = theme.stroke
     ctx.lineWidth = theme.strokeWidth
-    ctx.strokeText(text, x, y)
+    let sx = x
+    for (const word of words) {
+      ctx.strokeText(word, sx, y)
+      sx += ctx.measureText(word + ' ').width
+    }
   }
-  ctx.fillStyle = theme.color
-  ctx.fillText(text, x, y)
+  let cx = x
+  for (let i = 0; i < words.length; i++) {
+    ctx.fillStyle = i === activeIdx ? '#22d3ee' : theme.color
+    ctx.fillText(words[i]!, cx, y)
+    cx += ctx.measureText(words[i]! + (i < words.length - 1 ? ' ' : '')).width
+  }
 }
 
 function drawLogo(
@@ -453,7 +473,7 @@ export async function renderVideo(cfg: RenderConfig): Promise<Blob> {
       }
       if (cfg.theme.key !== 'none') {
         const cue = findCue(cfg.captions, t)
-        if (cue) drawCaption(ctx, cue.text, cfg.theme, canvas.width, canvas.height)
+        if (cue) drawCaption(ctx, cue, cfg.theme, canvas.width, canvas.height, t, !!cfg.highlightWords)
       }
       if (cfg.logo) drawLogo(ctx, cfg.logo, canvas.width, canvas.height)
       ctx.restore()

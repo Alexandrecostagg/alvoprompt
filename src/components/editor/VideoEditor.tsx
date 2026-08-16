@@ -34,6 +34,7 @@ export default function VideoEditor() {
   const [meta, setMeta] = useState<{ w: number; h: number; dur: number } | null>(null)
   const [aspect, setAspect] = useState<AspectOption>('9:16')
   const [burnCaptions, setBurnCaptions] = useState(true)
+  const [highlightWords, setHighlightWords] = useState(true)
   const [themeKey, setThemeKey] = useState<CaptionThemeKey>('cinema')
   const [segments, setSegments] = useState<SrtSegment[]>([])
   const [keepMask, setKeepMask] = useState<boolean[]>([])
@@ -241,6 +242,7 @@ export default function VideoEditor() {
         keepRanges: ranges,
         captions: cues,
         theme: CAPTION_THEMES.find((t) => t.key === themeKey) ?? CAPTION_THEMES[0]!,
+        highlightWords,
         logo: logo
           ? { image: logo, position: logoPosition, widthPct: logoWidth, opacity: 0.9 }
           : undefined,
@@ -311,6 +313,7 @@ export default function VideoEditor() {
           keepRanges: [range],
           captions: burnCaptions ? [{ start: seg.start, end: seg.end, text: seg.text }] : [],
           theme,
+          highlightWords,
           logo: logoOpt,
           music: musicOpt,
           motion,
@@ -415,7 +418,17 @@ export default function VideoEditor() {
                 Queimar legendas
               </label>
               {burnCaptions && (
-                <select
+                <>
+                  <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                    <input
+                      type="checkbox"
+                      checked={highlightWords}
+                      onChange={(e) => setHighlightWords(e.target.checked)}
+                      className="h-4 w-4 accent-cyan-400"
+                    />
+                    Destacar palavra (Shorts)
+                  </label>
+                  <select
                   value={themeKey}
                   onChange={(e) => setThemeKey(e.target.value as CaptionThemeKey)}
                   className="rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white"
@@ -427,6 +440,7 @@ export default function VideoEditor() {
                     </option>
                   ))}
                 </select>
+                </>
               )}
             </div>
             {burnCaptions && (

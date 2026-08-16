@@ -454,6 +454,7 @@ export default function PrompterView() {
         >
           <div ref={spacerTopRef} />
           <div
+            dir={settings.rtl ? 'rtl' : 'ltr'}
             style={{
               padding: '0 max(2rem, 8vw)',
               fontSize: settings.fontSize,
@@ -462,6 +463,7 @@ export default function PrompterView() {
               fontFamily: settings.fontFamily,
               color: settings.fontColor,
               whiteSpace: 'pre-wrap',
+              direction: settings.rtl ? 'rtl' : 'ltr',
             }}
           >
             {segments.map((seg, i) =>

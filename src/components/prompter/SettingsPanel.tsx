@@ -1,6 +1,13 @@
 import type { PrompterSettings } from '../../lib/types'
 import { useAppStore } from '../../store/useAppStore'
 
+const FONT_OPTIONS = [
+  { value: 'system-ui, -apple-system, sans-serif', label: 'Padrão (Sans)' },
+  { value: 'OpenDyslexic, sans-serif', label: 'OpenDyslexic (dislexia)' },
+  { value: 'Lexend, sans-serif', label: 'Lexend (leitura fácil)' },
+  { value: 'Georgia, serif', label: 'Serifa (Georgia)' },
+]
+
 const VOICE_LANGS = [
   { code: 'pt-BR', label: 'Português (BR)' },
   { code: 'pt-PT', label: 'Português (PT)' },
@@ -247,6 +254,20 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
                 className="h-8 w-12 cursor-pointer rounded border-0 bg-transparent"
               />
             </Row>
+            <Row label="Fonte">
+              <select
+                value={settings.fontFamily}
+                onChange={(e) => updateSettings({ fontFamily: e.target.value })}
+                className="rounded-lg border bg-transparent px-2 py-1.5 text-sm text-white"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f.value} value={f.value} style={{ background: 'var(--panel)' }}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </Row>
             <Row label="Destacar palavra atual">
               <Toggle
                 checked={settings.highlightWords}
@@ -255,6 +276,9 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
             </Row>
             <Row label="Espelhar texto (vidro de teleprompter)">
               <Toggle checked={settings.mirror} onChange={(mirror) => updateSettings({ mirror })} />
+            </Row>
+            <Row label="Texto da direita p/ esquerda (RTL)">
+              <Toggle checked={settings.rtl} onChange={(rtl) => updateSettings({ rtl })} />
             </Row>
           </section>
 
