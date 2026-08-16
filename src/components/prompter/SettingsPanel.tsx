@@ -17,6 +17,7 @@ const VOICE_LANGS = [
 
 interface SettingsPanelProps {
   settings: PrompterSettings
+  wordCount: number
   onClose: () => void
 }
 
@@ -84,7 +85,7 @@ function Segmented<T extends string>({
   )
 }
 
-export default function SettingsPanel({ settings, onClose }: SettingsPanelProps) {
+export default function SettingsPanel({ settings, wordCount, onClose }: SettingsPanelProps) {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const resetSettings = useAppStore((s) => s.resetSettings)
 
@@ -113,6 +114,7 @@ export default function SettingsPanel({ settings, onClose }: SettingsPanelProps)
                 options={[
                   { value: 'voice', label: 'Voz' },
                   { value: 'fixed', label: 'Fixa' },
+                  { value: 'timed', label: 'Tempo' },
                   { value: 'manual', label: 'Manual' },
                 ]}
                 onChange={(mode) => updateSettings({ mode })}
@@ -130,6 +132,26 @@ export default function SettingsPanel({ settings, onClose }: SettingsPanelProps)
                   className="w-36"
                 />
               </Row>
+            )}
+            {settings.mode === 'timed' && (
+              <>
+                <Row label={`Terminar em: ${settings.targetMinutes} min`}>
+                  <input
+                    type="range"
+                    min={1}
+                    max={15}
+                    step={0.5}
+                    value={settings.targetMinutes}
+                    onChange={(e) => updateSettings({ targetMinutes: Number(e.target.value) })}
+                    className="w-36"
+                  />
+                </Row>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                  Velocidade calculada: ≈{' '}
+                  {Math.max(1, Math.round(wordCount / Math.max(0.1, settings.targetMinutes)))} wpm
+                  ({wordCount} palavras).
+                </p>
+              </>
             )}
             {settings.mode === 'voice' && (
               <>

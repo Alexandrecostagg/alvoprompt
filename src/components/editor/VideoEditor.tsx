@@ -66,6 +66,8 @@ export default function VideoEditor() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [outUrl, setOutUrl] = useState<string | null>(null)
+  const [shorts, setShorts] = useState<{ url: string; start: number; end: number }[]>([])
+  const [shortsProgress, setShortsProgress] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const metaVideoRef = useRef<HTMLVideoElement | null>(null)
 
@@ -92,6 +94,16 @@ export default function VideoEditor() {
       if (outUrl) URL.revokeObjectURL(outUrl)
     },
     [outUrl],
+  )
+
+  useEffect(
+    () => () => {
+      setShorts((list) => {
+        list.forEach((s) => URL.revokeObjectURL(s.url))
+        return []
+      })
+    },
+    [],
   )
 
   const words = useMemo(() => estimateWordTimings(recording?.utterances ?? []), [recording])
@@ -248,6 +260,69 @@ export default function VideoEditor() {
       const url = URL.createObjectURL(blob)
       if (outUrl) URL.revokeObjectURL(outUrl)
       setOutUrl(url)
+      setProgress(1)
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') setError((err as Error).message)
+    } finally {
+      setProcessing(false)
+      abortRef.current = null
+    }
+  }
+
+  const handleShorts = async () => {
+    if (!recording || !meta || processing) return
+    if (keptRanges.length === 0) {
+      setError('Nenhum trecho para exportar — desmarque os trechos que deseja remover.')
+      return
+    }
+    const clips = keptRanges.slice(0, 12)
+    const target = ASPECT_OPTIONS.find((a) => a.value === '9:16')!
+    const crop = computeCrop(meta.w, meta.h, target.w!, target.h!)
+    const theme = CAPTION_THEMES.find((t) => t.key === themeKey) ?? CAPTION_THEMES[0]!
+    const logoOpt = logo
+      ? { image: logo, position: logoPosition, widthPct: logoWidth, opacity: 0.9 }
+      : undefined
+    const musicOpt = music ? { buffer: music, volume: musicVolume } : undefined
+    const chromaOpt = chromaEnabled
+      ? {
+          color: chromaColor,
+          similarity: chromaSimilarity,
+          smoothness: chromaSmoothness,
+          bgColor: chromaBg,
+        }
+      : undefined
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    setError(null)
+    setShortsProgress(0)
+    setProgress(0)
+    setProcessing(true)
+    try {
+      for (let i = 0; i < clips.length; i++) {
+        const idx = i
+        const seg = clips[idx]!
+        const range = { start: seg.start, end: Math.min(seg.end, meta.dur) }
+        const blob = await renderVideo({
+          sourceBlob: recording.blob,
+          targetWidth: target.w!,
+          targetHeight: target.h!,
+          crop,
+          keepRanges: [range],
+          captions: burnCaptions ? [{ start: seg.start, end: seg.end, text: seg.text }] : [],
+          theme,
+          logo: logoOpt,
+          music: musicOpt,
+          motion,
+          chroma: chromaOpt,
+          onProgress: (p) => setProgress((idx + p) / clips.length),
+          signal: controller.signal,
+        })
+        const url = URL.createObjectURL(blob)
+        setShorts((prev) => [...prev, { url, start: seg.start, end: seg.end }])
+        setShortsProgress(idx + 1)
+        await new Promise((r) => setTimeout(r, 50))
+      }
       setProgress(1)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setError((err as Error).message)
@@ -603,7 +678,7 @@ export default function VideoEditor() {
                     const kept = keepMask[i] ?? true
                     const hasFiller = findFillers(seg.text).length > 0
                     return (
-                      <li
+                    <li
                         key={i}
                         className="flex items-start gap-2 rounded-lg border p-2"
                         style={{
@@ -840,6 +915,57 @@ export default function VideoEditor() {
                 </a>
               </div>
             </div>
+          )}
+
+          {segments.length > 0 && (
+            <section className="rounded-xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+                ✂️ Fábrica de clipes 9:16
+              </h3>
+              {processing && shortsProgress > 0 ? (
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                  Gerando clipe {shortsProgress} de {Math.min(keptRanges.length, 12)}...
+                </p>
+              ) : (
+                <button
+                  onClick={() => void handleShorts()}
+                  disabled={keptRanges.length === 0}
+                  className="w-full rounded-lg border py-2.5 text-sm font-semibold disabled:opacity-40"
+                  style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                >
+                  Gerar 1 clipe por trecho ({keptRanges.length})
+                </button>
+              )}
+              {shorts.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {shorts.map((s, i) => (
+                    <div key={s.url} className="rounded-lg border p-2" style={{ borderColor: 'var(--border)' }}>
+                      <video src={s.url} controls playsInline muted className="mb-1 w-full rounded" />
+                      <a
+                        href={s.url}
+                        download={`alvoprompt-clipe-${i + 1}.webm`}
+                        className="block rounded-md px-3 py-1.5 text-center text-xs font-semibold text-black"
+                        style={{ background: 'var(--accent)' }}
+                      >
+                        Clipe {i + 1} · {formatSrtTime(s.end - s.start)}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {shorts.length > 0 && (
+                <button
+                  onClick={() => {
+                    shorts.forEach((s) => URL.revokeObjectURL(s.url))
+                    setShorts([])
+                  }}
+                  className="mt-2 text-xs underline"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  Limpar clipes
+                </button>
+              )}
+            </section>
           )}
         </div>
       </div>

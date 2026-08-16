@@ -57,7 +57,7 @@ export function usePrompterEngine({ mode, wordCount, wpm, onFrame }: EngineOptio
       onFrame(0)
     }
     setEngineState('running')
-    if (mode === 'fixed') startFixed()
+    if (mode === 'fixed' || mode === 'timed') startFixed()
   }, [setEngineState, startFixed])
 
   const pause = useCallback(() => {

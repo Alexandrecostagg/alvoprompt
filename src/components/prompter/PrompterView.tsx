@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { splitWords } from '../../lib/text'
 import { usePrompterEngine } from '../../hooks/usePrompterEngine'
 import { useVoiceTrack } from '../../hooks/useVoiceTrack'
+import { useGamepad } from '../../hooks/useGamepad'
 import { useRecorder, formatElapsed } from '../../hooks/useRecorder'
 import { useTranscription } from '../../hooks/useTranscription'
 import { buildSrt, type CaptionUtterance } from '../../lib/srt'
@@ -43,6 +44,11 @@ export default function PrompterView() {
   const content = currentScript?.content ?? ''
 
   const words = useMemo(() => splitWords(content), [content])
+
+  const effectiveWpm =
+    settings.mode === 'timed'
+      ? Math.max(1, Math.round(words.length / Math.max(0.1, settings.targetMinutes)))
+      : settings.wpm
 
   const segments = useMemo(() => {
     const parts = content.split(/(\s+)/)
@@ -97,7 +103,7 @@ export default function PrompterView() {
   const engine = usePrompterEngine({
     mode: settings.mode,
     wordCount: words.length,
-    wpm: settings.wpm,
+    wpm: effectiveWpm,
     onFrame: applyFrame,
   })
 
@@ -263,6 +269,16 @@ export default function PrompterView() {
   const refs = useRef({ handlePrimary, showSettings, settings, updateSettings, setView })
   refs.current = { handlePrimary, showSettings, settings, updateSettings, setView }
 
+  const engineRef = useRef({ stop: engine.stop, nudge: engine.nudge })
+  engineRef.current = { stop: engine.stop, nudge: engine.nudge }
+
+  const gamepadConnected = useGamepad((action) => {
+    if (action === 'primary') refs.current.handlePrimary()
+    else if (action === 'stop') engineRef.current.stop()
+    else if (action === 'nudge-up') engineRef.current.nudge(-0.02)
+    else if (action === 'nudge-down') engineRef.current.nudge(0.02)
+  })
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
@@ -326,6 +342,7 @@ export default function PrompterView() {
       return pausedByVoiceRef.current ? 'Pausado · aguardando sua voz' : 'Pausado'
     }
     if (settings.mode === 'voice') return voice.listening ? 'Ouvindo sua voz...' : 'Rolando (voz)'
+    if (settings.mode === 'timed') return 'Rolando (tempo-alvo)'
     return 'Rolando'
   })()
 
@@ -499,6 +516,11 @@ export default function PrompterView() {
           <span className="w-10 text-right text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
             {progressPct}%
           </span>
+          {gamepadConnected && (
+            <span className="hidden rounded-full border px-2 py-1 text-[11px] sm:inline" style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}>
+              🎮 pedal ativo
+            </span>
+          )}
           {settings.cameraOn && (
             <button
               onClick={() => {
@@ -534,11 +556,12 @@ export default function PrompterView() {
         </div>
         <p className="mt-2 text-center text-[11px]" style={{ color: 'var(--muted)' }}>
           Espaço: iniciar/pausar · ↑↓: ajustar posição · M: espelhar · Esc: sair
+          {gamepadConnected && ' · Pedal: ▶=botão 1 · ⟲=botão 2 · ↑↓=botões 3/4'}
         </p>
       </div>
 
       {showSettings && (
-        <SettingsPanel settings={settings} onClose={() => setShowSettings(false)} />
+        <SettingsPanel settings={settings} wordCount={words.length} onClose={() => setShowSettings(false)} />
       )}
 
       {showResult && recorder.videoUrl && (

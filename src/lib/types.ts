@@ -11,13 +11,14 @@ export type View = 'library' | 'editor' | 'prompter' | 'video-editor' | 'control
 
 export type AiPanelTab = 'generate' | 'improve' | 'titles'
 
-export type ScrollMode = 'voice' | 'fixed' | 'manual'
+export type ScrollMode = 'voice' | 'fixed' | 'manual' | 'timed'
 
 export type AspectGuideRatio = 'none' | '9:16' | '1:1' | '16:9'
 
 export interface PrompterSettings {
   mode: ScrollMode
   wpm: number
+  targetMinutes: number
   fontSize: number
   lineHeight: number
   fontColor: string
@@ -38,6 +39,7 @@ export interface PrompterSettings {
 export const DEFAULT_SETTINGS: PrompterSettings = {
   mode: 'voice',
   wpm: 150,
+  targetMinutes: 3,
   fontSize: 48,
   lineHeight: 1.6,
   fontColor: '#ffffff',
