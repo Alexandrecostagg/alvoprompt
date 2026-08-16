@@ -90,7 +90,7 @@ export default function SettingsPanel({ settings, onClose }: SettingsPanelProps)
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="flex h-full w-full max-w-sm flex-col border-l" style={{ background: '#0e1118', borderColor: 'var(--border)' }}>
+      <div className="flex h-full w-full max-w-sm flex-col border-l" style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}>
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-semibold text-white">Configurações do Prompter</h2>
           <button
@@ -152,7 +152,7 @@ export default function SettingsPanel({ settings, onClose }: SettingsPanelProps)
                     style={{ borderColor: 'var(--border)' }}
                   >
                     {VOICE_LANGS.map((l) => (
-                      <option key={l.code} value={l.code} style={{ background: '#0e1118' }}>
+                      <option key={l.code} value={l.code} style={{ background: 'var(--panel)' }}>
                         {l.label}
                       </option>
                     ))}

@@ -217,7 +217,7 @@ export default function ScriptLibrary() {
             className="w-full max-w-lg rounded-2xl border p-5"
             style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
           >
-            <h3 className="mb-1 font-semibold text-white">Importar de link</h3>
+            <h3 className="mb-1 font-semibold text-white on-dark">Importar de link</h3>
             <p className="mb-4 text-xs" style={{ color: 'var(--muted)' }}>
               Cole uma URL pública com texto (funciona quando o site permite acesso direto).
               YouTube e Google Docs precisam de importação manual ou servidor (roadmap).
@@ -231,7 +231,7 @@ export default function ScriptLibrary() {
                 if (e.key === 'Escape') setShowLinkImport(false)
               }}
               placeholder="https://exemplo.com/roteiro"
-              className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
+              className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white on-dark outline-none"
               style={{ borderColor: 'var(--border)' }}
             />
             {linkError && (

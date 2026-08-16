@@ -347,7 +347,7 @@ export default function VideoEditor() {
                   style={{ borderColor: 'var(--border)' }}
                 >
                   {CAPTION_THEMES.filter((t) => t.key !== 'none').map((t) => (
-                    <option key={t.key} value={t.key} style={{ background: '#0e1118' }}>
+                    <option key={t.key} value={t.key} style={{ background: 'var(--panel)' }}>
                       {t.label}
                     </option>
                   ))}
@@ -406,10 +406,10 @@ export default function VideoEditor() {
                       className="rounded-lg border bg-transparent px-2 py-1.5 text-xs text-white"
                       style={{ borderColor: 'var(--border)' }}
                     >
-                      <option value="top-left" style={{ background: '#0e1118' }}>Canto sup. esq.</option>
-                      <option value="top-right" style={{ background: '#0e1118' }}>Canto sup. dir.</option>
-                      <option value="bottom-left" style={{ background: '#0e1118' }}>Canto inf. esq.</option>
-                      <option value="bottom-right" style={{ background: '#0e1118' }}>Canto inf. dir.</option>
+                      <option value="top-left" style={{ background: 'var(--panel)' }}>Canto sup. esq.</option>
+                      <option value="top-right" style={{ background: 'var(--panel)' }}>Canto sup. dir.</option>
+                      <option value="bottom-left" style={{ background: 'var(--panel)' }}>Canto inf. esq.</option>
+                      <option value="bottom-right" style={{ background: 'var(--panel)' }}>Canto inf. dir.</option>
                     </select>
                     <button
                       onClick={() => setLogo(null)}

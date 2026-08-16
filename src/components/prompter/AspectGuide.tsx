@@ -65,7 +65,7 @@ export default function AspectGuide({ ratio, dimOutside = true }: AspectGuidePro
             />
           </div>
           <span
-            className="absolute rounded-md px-2 py-0.5 text-[11px] font-semibold text-white"
+            className="absolute rounded-md px-2 py-0.5 text-[11px] font-semibold text-white on-dark"
             style={{
               left: '50%',
               top: `calc(50% + ${size.h / 2 + 12}px)`,

@@ -72,7 +72,7 @@ export default function QrScanner({
   return (
     <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--accent)' }}>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-white">📷 Aponte para o QR code do outro aparelho</p>
+        <p className="text-sm font-medium text-white on-dark">📷 Aponte para o QR code do outro aparelho</p>
         <button
           onClick={onClose}
           className="rounded-lg border px-3 py-1 text-xs"

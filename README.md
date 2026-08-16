@@ -12,7 +12,7 @@ Roteiro → Prompter (VoiceTrack) → Gravação → (IA: legendas, edição) �
 - **Slogan (PT)**: Seu texto no alvo, seus olhos na câmera.
 - **Slogan (EN)**: Your text on target, your eyes on camera.
 - **Domínios disponíveis**: alvoprompt.com · .com.br · .app · .dev · .io · .ai · .net · .live · .studio
-- **Logotipo**: mira de câmera (alvo concêntrico) com a linha de leitura do teleprompter ao centro — [`public/favicon.svg`](public/favicon.svg)
+- **Logotipo**: marca em squircle com gradiente violeta → ciano formando um "A" cuja barra central é a linha de leitura do teleprompter — [`public/favicon.svg`](public/favicon.svg). Tema claro padrão com alternância claro/escuro no cabeçalho.
 
 | Token | Cor |
 |---|---|

@@ -210,7 +210,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
     <div className="fixed inset-0 z-40 flex justify-end">
       <div
         className="flex h-full w-full max-w-md flex-col border-l"
-        style={{ background: '#0e1118', borderColor: 'var(--border)' }}
+        style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
       >
         <div
           className="flex items-center justify-between border-b px-5 py-4"
@@ -271,7 +271,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
                     style={{ borderColor: 'var(--border)' }}
                   >
                     {FORMATS.map((f) => (
-                      <option key={f} value={f} style={{ background: '#0e1118' }}>
+                      <option key={f} value={f} style={{ background: 'var(--panel)' }}>
                         {f}
                       </option>
                     ))}
@@ -288,7 +288,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
                     style={{ borderColor: 'var(--border)' }}
                   >
                     {TONES.map((t) => (
-                      <option key={t} value={t} style={{ background: '#0e1118' }}>
+                      <option key={t} value={t} style={{ background: 'var(--panel)' }}>
                         {t}
                       </option>
                     ))}
@@ -306,7 +306,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
                   style={{ borderColor: 'var(--border)' }}
                 >
                   {DURATIONS.map((d) => (
-                    <option key={d} value={d} style={{ background: '#0e1118' }}>
+                    <option key={d} value={d} style={{ background: 'var(--panel)' }}>
                       {d}
                     </option>
                   ))}
@@ -399,7 +399,7 @@ export default function AiPanel({ tab }: AiPanelProps) {
                   style={{ borderColor: 'var(--border)' }}
                 >
                   {IMPROVE_ACTIONS.map((a) => (
-                    <option key={a.value} value={a.value} style={{ background: '#0e1118' }}>
+                    <option key={a.value} value={a.value} style={{ background: 'var(--panel)' }}>
                       {a.label}
                     </option>
                   ))}

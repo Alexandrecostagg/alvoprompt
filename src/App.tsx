@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from './store/useAppStore'
 import ScriptLibrary from './components/library/ScriptLibrary'
 import ScriptEditor from './components/editor/ScriptEditor'
@@ -11,26 +11,44 @@ function Logo() {
     <div className="flex items-center gap-2">
       <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">
         <defs>
-          <linearGradient id="alvog" x1="7" y1="7" x2="41" y2="41" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#A78BFA" />
-            <stop offset="1" stopColor="#6366F1" />
+          <linearGradient id="alvog" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#8B5CF6" />
+            <stop offset="1" stopColor="#22D3EE" />
           </linearGradient>
         </defs>
-        <circle cx="24" cy="24" r="21.5" stroke="url(#alvog)" strokeWidth="3" />
-        <circle cx="24" cy="24" r="14.5" stroke="url(#alvog)" strokeWidth="1.5" opacity=".45" />
-        <rect x="8" y="21" width="32" height="6" rx="3" fill="var(--accent)" />
+        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#alvog)" />
+        <g stroke="#fff" strokeLinecap="round" strokeWidth="4.5">
+          <path d="M24 16 17.2 34" />
+          <path d="M24 16 30.8 34" />
+        </g>
+        <rect x="18.4" y="25.6" width="11.2" height="4.6" rx="2.3" fill="#fff" />
       </svg>
-      <span className="text-lg font-semibold tracking-tight text-white">
+      <span className="text-lg font-bold tracking-tight text-white">
         alvo<span style={{ color: 'var(--accent-2)' }}>prompt</span>
       </span>
     </div>
   )
 }
 
+function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('alvoprompt-theme')
+    return saved === 'dark' ? 'dark' : 'light'
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('alvoprompt-theme', theme)
+  }, [theme])
+
+  return { theme, toggleTheme: () => setTheme((t) => (t === 'light' ? 'dark' : 'light')) }
+}
+
 export default function App() {
   const view = useAppStore((s) => s.view)
   const currentScript = useAppStore((s) => s.currentScript)
   const setView = useAppStore((s) => s.setView)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     void useAppStore.getState().loadScripts()
@@ -99,6 +117,15 @@ export default function App() {
             style={{ color: 'var(--muted)' }}
           >
             🎮 Control Room
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="ml-1 rounded-lg border px-2.5 py-1.5 transition-colors"
+            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            title={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+            aria-label="Alternar tema"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
       </header>

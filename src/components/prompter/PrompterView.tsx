@@ -377,7 +377,7 @@ export default function PrompterView() {
           >
             ← Sair
           </button>
-          <span className="max-w-48 truncate text-sm font-medium text-white sm:max-w-72">
+          <span className="max-w-48 truncate text-sm font-medium text-white on-dark sm:max-w-72">
             {currentScript.title || 'Sem título'}
           </span>
         </div>
@@ -547,7 +547,7 @@ export default function PrompterView() {
             className="w-full max-w-2xl rounded-2xl border p-5"
             style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
           >
-            <h3 className="mb-3 font-semibold text-white">Gravação concluída</h3>
+            <h3 className="mb-3 font-semibold text-white on-dark">Gravação concluída</h3>
             <video src={recorder.videoUrl} controls className="mb-4 w-full rounded-lg" />
             {srtText && (
               <div
@@ -574,7 +574,7 @@ export default function PrompterView() {
                     Baixar legenda (.srt)
                   </button>
                 </div>
-                <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white">
+                <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white on-dark">
                   {srtText}
                 </pre>
               </div>
@@ -595,11 +595,11 @@ export default function PrompterView() {
                         setTransLangIdx(Number(e.target.value))
                         setTranslatedSrt(null)
                       }}
-                      className="rounded-lg border bg-transparent px-2 py-1 text-xs text-white"
+                      className="rounded-lg border bg-transparent px-2 py-1 text-xs text-white on-dark"
                       style={{ borderColor: 'var(--border)' }}
                     >
                       {SRT_LANGUAGES.map((l, i) => (
-                        <option key={l.code} value={i} style={{ background: '#0e1118' }}>
+                        <option key={l.code} value={i} style={{ background: 'var(--panel)' }}>
                           {l.label}
                         </option>
                       ))}
@@ -630,7 +630,7 @@ export default function PrompterView() {
                 )}
                 {translatedSrt && (
                   <>
-                    <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white">
+                    <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap font-sans text-xs leading-relaxed text-white on-dark">
                       {translatedSrt}
                     </pre>
                     <div className="mt-2 flex justify-end">
