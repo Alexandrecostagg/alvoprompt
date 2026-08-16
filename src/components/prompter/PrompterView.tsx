@@ -564,7 +564,7 @@ export default function PrompterView() {
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
-                      a.download = `promptflow-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
+                      a.download = `alvoprompt-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
                       a.click()
                       URL.revokeObjectURL(url)
                     }}
@@ -640,7 +640,7 @@ export default function PrompterView() {
                           const url = URL.createObjectURL(blob)
                           const a = document.createElement('a')
                           a.href = url
-                          a.download = `promptflow-${SRT_LANGUAGES[transLangIdx]!.code}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
+                          a.download = `alvoprompt-${SRT_LANGUAGES[transLangIdx]!.code}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.srt`
                           a.click()
                           URL.revokeObjectURL(url)
                         }}
@@ -681,7 +681,7 @@ export default function PrompterView() {
               </button>
               <a
                 href={recorder.videoUrl}
-                download={`promptflow-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                download={`alvoprompt-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
                 className="rounded-lg px-4 py-2 text-sm font-semibold text-black"
                 style={{ background: 'var(--accent)' }}
               >

@@ -1,8 +1,25 @@
-# PromptFlow
+# Alvoprompt
 
-Teleprompter com IA — o melhor de BIGVU + Teleprompter Pro + PromptSmart em uma única ferramenta.
+**Seu texto no alvo, seus olhos na câmera.** · *Your text on target, your eyes on camera.*
+
+Teleprompter com IA — o melhor de BIGVU + Teleprompter Pro + PromptSmart em uma única ferramenta, com **melhorias substanciais**: IA local, control room sem servidor e estúdio de vídeo completo, 100% offline.
 
 Roteiro → Prompter (VoiceTrack) → Gravação → (IA: legendas, edição) → Publicação.
+
+## Marca
+
+- **Nome**: Alvoprompt — "alvo" (mira/ponto de mira, português) + "prompt" (teleprompter): manter os olhos no alvo é a câmera.
+- **Slogan (PT)**: Seu texto no alvo, seus olhos na câmera.
+- **Slogan (EN)**: Your text on target, your eyes on camera.
+- **Domínios disponíveis**: alvoprompt.com · .com.br · .app · .dev · .io · .ai · .net · .live · .studio
+- **Logotipo**: mira de câmera (alvo concêntrico) com a linha de leitura do teleprompter ao centro — [`public/favicon.svg`](public/favicon.svg)
+
+| Token | Cor |
+|---|---|
+| Violeta (primária) | `#A78BFA` → `#6366F1` (gradiente) |
+| Ciano (accent) | `#22D3EE` |
+| Fundo | `#0B0D12` |
+| Superfície | `#12151D` |
 
 ## Visão
 

@@ -824,7 +824,7 @@ export default function VideoEditor() {
               <div className="flex gap-2">
                 <a
                   href={outUrl}
-                  download={`promptflow-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                  download={`alvoprompt-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
                   className="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold text-black"
                   style={{ background: 'var(--accent)' }}
                 >
@@ -832,7 +832,7 @@ export default function VideoEditor() {
                 </a>
                 <a
                   href={recording.url}
-                  download="promptflow-gravacao-original.webm"
+                  download="alvoprompt-gravacao-original.webm"
                   className="rounded-lg border px-4 py-2 text-sm"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >

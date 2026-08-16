@@ -9,14 +9,19 @@ import ControlRoom from './components/control/ControlRoom'
 function Logo() {
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-black"
-        style={{ background: 'var(--accent)' }}
-      >
-        P
-      </div>
+      <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="alvog" x1="7" y1="7" x2="41" y2="41" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#A78BFA" />
+            <stop offset="1" stopColor="#6366F1" />
+          </linearGradient>
+        </defs>
+        <circle cx="24" cy="24" r="21.5" stroke="url(#alvog)" strokeWidth="3" />
+        <circle cx="24" cy="24" r="14.5" stroke="url(#alvog)" strokeWidth="1.5" opacity=".45" />
+        <rect x="8" y="21" width="32" height="6" rx="3" fill="var(--accent)" />
+      </svg>
       <span className="text-lg font-semibold tracking-tight text-white">
-        Prompt<span style={{ color: 'var(--accent)' }}>Flow</span>
+        alvo<span style={{ color: 'var(--accent-2)' }}>prompt</span>
       </span>
     </div>
   )

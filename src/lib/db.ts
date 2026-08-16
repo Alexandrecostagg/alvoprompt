@@ -1,18 +1,18 @@
 import Dexie, { type Table } from 'dexie'
 import type { Script } from './types'
 
-class PromptFlowDB extends Dexie {
+class AlvopromptDB extends Dexie {
   scripts!: Table<Script, number>
 
   constructor() {
-    super('promptflow')
+    super('alvoprompt')
     this.version(1).stores({
       scripts: '++id, title, updatedAt',
     })
   }
 }
 
-export const db = new PromptFlowDB()
+export const db = new AlvopromptDB()
 
 export async function getScripts(): Promise<Script[]> {
   return db.scripts.orderBy('updatedAt').reverse().toArray()
