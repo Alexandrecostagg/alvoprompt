@@ -103,6 +103,8 @@ export interface RenderConfig {
   targetWidth: number
   targetHeight: number
   crop: VideoCrop
+  /** Substitui o crop a cada frame (ex.: reframe seguindo o rosto). Recebe o tempo absoluto do vídeo. */
+  cropAt?: (t: number) => VideoCrop
   keepRanges: RenderRange[]
   captions: CaptionCue[]
   theme: CaptionTheme
@@ -449,10 +451,11 @@ export async function renderVideo(cfg: RenderConfig): Promise<Blob> {
     }
 
     const draw = (fraction: number) => {
-      const crop = cfg.motion
-        ? applyMotion(cfg.crop, cfg.motion, fraction, video.videoWidth, video.videoHeight)
-        : cfg.crop
       const t = video.currentTime
+      const baseCrop = cfg.cropAt ? cfg.cropAt(t) : cfg.crop
+      const crop = cfg.motion
+        ? applyMotion(baseCrop, cfg.motion, fraction, video.videoWidth, video.videoHeight)
+        : baseCrop
       ctx.save()
       if (cfg.chroma) {
         drawChroma(ctx, crop, cfg.chroma, canvas.width, canvas.height)

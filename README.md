@@ -85,6 +85,7 @@ src/
 │   ├── control/ControlRoom.tsx   # Web Control Room (pareamento + painel de controle)
 │   ├── control/QrCode.tsx        # QR do código de pareamento (qrcode.react)
 │   ├── control/QrScanner.tsx     # leitor de QR pela câmera (jsQR, code-split)
+│   ├── SyncControl.tsx           # login/sync Firebase (☁️ no header, lazy-loaded)
 │   └── prompter/
 │       ├── PrompterView.tsx      # prompter full-screen (texto + câmera + gravação + legendas)
 │       ├── SettingsPanel.tsx     # ajustes de rolagem, texto, câmera e enquadramento
@@ -104,6 +105,11 @@ src/
 │   ├── translate.ts              # tradução de legendas (70+ idiomas)
 │   ├── video/render.ts           # pipeline de edição de vídeo (canvas + MediaRecorder, logo/música, chroma key, Ken Burns)
 │   ├── cuts.ts                   # cortes automáticos por palavra (timeline) e por análise de áudio RMS (remoção de pausas/silêncios)
+│   ├── faceTrack.ts              # reframe com tracking de rosto (Shape Detection API → crop dinâmico)
+│   ├── clipPrompt.ts             # comandos em linguagem natural p/ cortar/formatar ("de 1:30 a 2:15", "remove silêncio")
+│   ├── firebase.ts               # init lazy do Firebase (config via VITE_FIREBASE_*)
+│   ├── sync.ts                   # sync Firestore (roteiros → nuvem e vice-versa)
+│   ├── cloudflare.ts             # cliente do Worker (Whisper/TTS/tradução)
 │   ├── text.ts                   # tokens, normalização, similaridade, fillers, stats
 │   └── types.ts                  # tipos e settings padrão
 └── store/useAppStore.ts          # Zustand
@@ -145,6 +151,6 @@ Cliente pronto em `src/lib/cloudflare.ts`.
 - [x] **Fase 1 (MVP)** — prompter core: VoiceTrack, rolagem fixa/manual, modo espelho, câmera + gravação, biblioteca local
 - [x] **Fase 2** — gerador de roteiros IA, melhorar roteiro, títulos & ganchos, análise de roteiro (palavras-chave + duração), remoção de fillers/vícios de linguagem, guia de enquadramento 9:16/1:1/16:9, legendas automáticas com export SRT (Web Speech API), tradução de legendas para 70+ idiomas (DeepSeek), **editor de vídeo** (redimensionamento 9:16/1:1/16:9, corte por palavras da transcrição, temas de legenda queimadas no vídeo — canvas + MediaRecorder), import .docx/PDF/link
   - [ ] import áudio (transcrição) e link YouTube/Google Docs (exigem backend)
-- [x] **Fase 3 (parcial)** — **Web Control Room** (controlar o prompter de outro aparelho na mesma rede: pareamento sem servidor via WebRTC/DataChannel por código **ou QR escaneado pela câmera**, enviar roteiro, play/pause, seek, espelhar, open mic, status em tempo real), **mírula de contato visual** (dot no centro da câmera), **brand kit no editor** (logo sobreposta + trilha sonora com mix de áudio no vídeo exportado), **green screen (chroma key)** com troca de cor de fundo e suavização, **movimento de câmera (Ken Burns)** no editor de vídeo (zoom-in/zoom-out/pan esquerda-direita por trecho), **B-rolls automáticos** (corte de pausas/silêncios usando o timing das palavras da transcrição **ou análise do áudio por RMS** — funciona até sem transcrição, com limiar de pausa, margem e sensibilidade ajustáveis — tudo offline no editor)
+- [x] **Fase 3 (parcial)** — **Web Control Room** (controlar o prompter de outro aparelho na mesma rede: pareamento sem servidor via WebRTC/DataChannel por código **ou QR escaneado pela câmera**, enviar roteiro, play/pause, seek, espelhar, open mic, status em tempo real), **mírula de contato visual** (dot no centro da câmera), **brand kit no editor** (logo sobreposta + trilha sonora com mix de áudio no vídeo exportado), **green screen (chroma key)** com troca de cor de fundo e suavização, **movimento de câmera (Ken Burns)** no editor de vídeo (zoom-in/zoom-out/pan esquerda-direita por trecho), **B-rolls automáticos** (corte de pausas/silêncios usando o timing das palavras da transcrição **ou análise do áudio por RMS** — funciona até sem transcrição, com limiar de pausa, margem e sensibilidade ajustáveis — tudo offline no editor), **modo tempo-alvo** (terminar o roteiro em X minutos), **atalhos por gamepad/foot pedal**, **fábrica de clipes 9:16** (1 vídeo → N shorts com legendas queimadas e word highlight), **reframe automático seguindo o rosto** (Shape Detection API) e **comandos em linguagem natural** ("pega a parte de 1:30 a 2:15", "corte os primeiros 20s", "remove o silêncio"), **fontes p/ dislexia + RTL**, **calculadora de tempo/fala**
   - [ ] editor IA (eye contact, dublagem), agendamento multi-canal, workspaces de equipe (exigem backend)
 - [ ] **Fase 4** — avatares/AI Twin, API, empacotamento nativo (Capacitor), PWA instalável

@@ -3,6 +3,8 @@ import { useAppStore } from '../../store/useAppStore'
 import { groupUtterances, formatSrtTime, type SrtSegment } from '../../lib/srt'
 import { findFillers } from '../../lib/text'
 import { autoCutRanges, detectSpeechRanges, estimateWordTimings, totalRangesDuration } from '../../lib/cuts'
+import { computeFacePath, cropCenteredOnFace, faceTrackingSupported, type FaceSample } from '../../lib/faceTrack'
+import { parseClipPrompt, type ClipPromptResult } from '../../lib/clipPrompt'
 import {
   CAPTION_THEMES,
   computeCrop,
@@ -67,6 +69,9 @@ export default function VideoEditor() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [outUrl, setOutUrl] = useState<string | null>(null)
+  const [reframe, setReframe] = useState(false)
+  const facePathRef = useRef<FaceSample[] | null>(null)
+  const [promptText, setPromptText] = useState('')
   const [shorts, setShorts] = useState<{ url: string; start: number; end: number }[]>([])
   const [shortsProgress, setShortsProgress] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
@@ -105,6 +110,11 @@ export default function VideoEditor() {
       })
     },
     [],
+  )
+
+  const promptResults = useMemo<ClipPromptResult[]>(
+    () => (promptText.trim().length > 2 ? parseClipPrompt(promptText) : []),
+    [promptText],
   )
 
   const words = useMemo(() => estimateWordTimings(recording?.utterances ?? []), [recording])
@@ -209,6 +219,21 @@ export default function VideoEditor() {
     }
   }
 
+  const ensureFacePath = async (signal?: AbortSignal) => {
+    if (!reframe || !recording) return null
+    if (!facePathRef.current) {
+      try {
+        facePathRef.current = await computeFacePath(recording.blob, 1, signal, (done, total) =>
+          setProgress(0.4 * (done / total)),
+        )
+      } catch {
+        setReframe(false)
+        return null
+      }
+    }
+    return facePathRef.current
+  }
+
   const handleProcess = async () => {
     if (!recording || !meta || processing) return
     setError(null)
@@ -234,11 +259,17 @@ export default function VideoEditor() {
     abortRef.current = controller
     setProcessing(true)
     try {
+      const facePath = await ensureFacePath(controller.signal)
+      const cropAt =
+        facePath && aspect !== 'original'
+          ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, targetW, targetH)
+          : undefined
       const blob = await renderVideo({
         sourceBlob: recording.blob,
         targetWidth: targetW,
         targetHeight: targetH,
         crop,
+        cropAt,
         keepRanges: ranges,
         captions: cues,
         theme: CAPTION_THEMES.find((t) => t.key === themeKey) ?? CAPTION_THEMES[0]!,
@@ -256,7 +287,7 @@ export default function VideoEditor() {
               bgColor: chromaBg,
             }
           : undefined,
-        onProgress: setProgress,
+        onProgress: (p) => setProgress(0.4 + 0.6 * p),
         signal: controller.signal,
       })
       const url = URL.createObjectURL(blob)
@@ -301,6 +332,10 @@ export default function VideoEditor() {
     setProgress(0)
     setProcessing(true)
     try {
+      const facePath = await ensureFacePath(controller.signal)
+      const cropAt = facePath
+        ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, target.w!, target.h!)
+        : undefined
       for (let i = 0; i < clips.length; i++) {
         const idx = i
         const seg = clips[idx]!
@@ -310,6 +345,7 @@ export default function VideoEditor() {
           targetWidth: target.w!,
           targetHeight: target.h!,
           crop,
+          cropAt,
           keepRanges: [range],
           captions: burnCaptions ? [{ start: seg.start, end: seg.end, text: seg.text }] : [],
           theme,
@@ -318,7 +354,7 @@ export default function VideoEditor() {
           music: musicOpt,
           motion,
           chroma: chromaOpt,
-          onProgress: (p) => setProgress((idx + p) / clips.length),
+          onProgress: (p) => setProgress(0.4 + 0.6 * ((idx + p) / clips.length)),
           signal: controller.signal,
         })
         const url = URL.createObjectURL(blob)
@@ -333,6 +369,32 @@ export default function VideoEditor() {
       setProcessing(false)
       abortRef.current = null
     }
+  }
+
+  const applyPromptResult = (result: ClipPromptResult) => {
+    for (const action of result.actions) {
+      if (action.type === 'aspect') {
+        setAspect(action.value)
+      } else if (action.type === 'captions') {
+        setBurnCaptions(true)
+      } else if (action.type === 'cut-audio') {
+        setAutoCut(true)
+        setCutSource('audio')
+      } else {
+        if (segments.length === 0) {
+          setError('Comando de tempo exige transcrição — grave no modo Fixa/Manual ou use o corte por áudio.')
+          continue
+        }
+        setKeepMask(
+          segments.map((s) => {
+            if (action.type === 'trim-start') return s.end > action.seconds
+            if (action.type === 'trim-end') return s.start < meta!.dur - action.seconds
+            return s.end > action.from && s.start < action.to
+          }),
+        )
+      }
+    }
+    setPromptText('')
   }
 
   return (
@@ -401,6 +463,22 @@ export default function VideoEditor() {
                 </button>
               ))}
             </div>
+            {aspect !== 'original' &&
+              (faceTrackingSupported() ? (
+                <label className="mt-2 flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                  <input
+                    type="checkbox"
+                    checked={reframe}
+                    onChange={(e) => setReframe(e.target.checked)}
+                    className="h-4 w-4 accent-cyan-400"
+                  />
+                  Reframe automático — segue o rosto
+                </label>
+              ) : (
+                <p className="mt-2 text-[11px]" style={{ color: 'var(--muted)' }}>
+                  Reframe automático exige Chrome/Edge (API FaceDetector).
+                </p>
+              ))}
           </section>
 
           <section>
@@ -930,6 +1008,43 @@ export default function VideoEditor() {
               </div>
             </div>
           )}
+
+          <section className="rounded-xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+              🗣️ Comando em linguagem natural
+            </h3>
+            <input
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && promptResults.length) applyPromptResult(promptResults[0]!)
+              }}
+              placeholder='Ex.: "pega a parte de 1:30 a 2:15 e deixa 9:16 com legendas"'
+              className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
+              style={{ borderColor: 'var(--border)' }}
+            />
+            {promptResults.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {promptResults.map((r, i) => (
+                  <button
+                    key={i}
+                    onClick={() => applyPromptResult(r)}
+                    className="rounded-md border px-2.5 py-1.5 text-xs transition-colors"
+                    style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                    title="Clique para aplicar"
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {promptText.trim().length > 2 && promptResults.length === 0 && (
+              <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+                Não entendi — tente: “de 1:30 a 2:15”, “corte os primeiros 20 segundos”,
+                “remova o silêncio”, “deixa 9:16”, “adiciona legendas”.
+              </p>
+            )}
+          </section>
 
           {segments.length > 0 && (
             <section className="rounded-xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
