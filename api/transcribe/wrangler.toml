@@ -1,10 +1,16 @@
 name = "alvoprompt-api"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
+account_id = "8f0d2ed7851f91dd1efbaa53af71323d"
 
 # Workers AI (plano gratuito: 10k neurônios/dia)
 [ai]
 binding = "AI"
+
+# R2 (plano gratuito: 10 GB de armazenamento, 1M de leituras/mês)
+[[r2_buckets]]
+binding = "alvoprompt_media"
+bucket_name = "alvoprompt-media"
 
 # Uso local: npx wrangler dev --port 8787
 # Publicar: npx wrangler deploy

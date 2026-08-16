@@ -13,6 +13,7 @@ export interface Env {
   AI: {
     run(model: string, input: unknown): Promise<unknown>
   }
+  alvoprompt_media: R2Bucket
 }
 
 const CORS_HEADERS = {
@@ -93,7 +94,31 @@ export default {
       }
     }
 
-    return new Response('alvoprompt api — use /transcribe | /tts | /translate', {
+    // ---- Armazenamento de mídia no R2 ----
+    const mediaMatch = url.pathname.match(/^\/media\/(.+)$/)
+    if (mediaMatch) {
+      const key = decodeURIComponent(mediaMatch[1]!)
+      if (request.method === 'PUT') {
+        await env.alvoprompt_media.put(key, request.body)
+        return json({ ok: true, key })
+      }
+      if (request.method === 'GET') {
+        const object = await env.alvoprompt_media.get(key)
+        if (!object) return json({ error: 'Arquivo não encontrado.' }, 404)
+        const headers = new Headers(CORS_HEADERS)
+        object.writeHttpMetadata(headers)
+        headers.set('Content-Type', object.httpMetadata?.contentType ?? 'application/octet-stream')
+        headers.set('ETag', object.httpEtag)
+        return new Response(object.body, { headers })
+      }
+      if (request.method === 'DELETE') {
+        await env.alvoprompt_media.delete(key)
+        return json({ ok: true })
+      }
+      return json({ error: 'Método não permitido.' }, 405)
+    }
+
+    return new Response('alvoprompt api — use /transcribe | /tts | /translate | /media/:key', {
       headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS },
     })
   },
