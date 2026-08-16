@@ -36,6 +36,7 @@ Detalhes da pesquisa e decisões de produto: [`docs/`](docs/)
 
 - [docs/01-analise-competidores.md](docs/01-analise-competidores.md) — análise profunda de BIGVU, Teleprompter Pro e PromptSmart
 - [docs/02-product-spec.md](docs/02-product-spec.md) — features, MVP, fases e modelo de preço
+- [docs/03-analise-competidores-2.md](docs/03-analise-competidores-2.md) — ronda 2: Descript, OpusClip, Opticue e Teleprompter.com (o que copiar)
 
 ## Stack
 
