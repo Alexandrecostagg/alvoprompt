@@ -3,8 +3,12 @@
  *
  * Endpoints:
  *   POST /transcribe  multipart: audio=<arquivo>, lang=<código ISO>  → { result: { text, words } }
- *   POST /tts         JSON: { text, lang }                            → áudio WAV (MeloTTS)
+ *   POST /tts         JSON: { text, lang }                            → áudio WAV (MeloTTS → fallback Deepgram Aura)
  *   POST /translate   JSON: { text, sourceLang, targetLang }          → { translated_text }
+ *   POST /import-url  JSON: { url }                                   → { text, title } (YouTube/GDocs/URL genérica)
+ *   POST /avatar      JSON: { prompt }                                → imagem PNG (Flux)
+ *   PUT/GET/DELETE /media/:key (R2)
+ *   GET/PUT /sync     Header "x-sync-pass"; PUT body { scripts }      → sync de roteiros (KV)
  *
  * Uso local:  npx wrangler dev --port 8787
  * Publicar:   npx wrangler deploy
@@ -14,12 +18,13 @@ export interface Env {
     run(model: string, input: unknown): Promise<unknown>
   }
   alvoprompt_media: R2Bucket
+  ALVOPROMPT_SYNC: KVNamespace
 }
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-sync-pass',
 }
 
 function json(body: unknown, status = 200): Response {
@@ -29,10 +34,175 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)))
+  }
+  return btoa(binary)
+}
+
 function toArrayBuffer(arr: number[]): ArrayBuffer {
   const out = new Uint8Array(arr.length)
   for (let i = 0; i < arr.length; i++) out[i] = arr[i]
   return out.buffer
+}
+
+async function syncKey(pass: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass))
+  const hex = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  return `sync:${hex}`
+}
+
+function youtubeVideoId(target: string): string | null {
+  const u = new URL(target)
+  if (/(youtu\.be)/i.test(u.hostname)) return u.pathname.slice(1).split('/')[0] || null
+  if (/(youtube\.com)/i.test(u.hostname)) {
+    if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2] ?? null
+    return u.searchParams.get('v')
+  }
+  return null
+}
+
+function decodeXmlEntities(input: string): string {
+  return input
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+}
+
+function htmlToText(html: string): string {
+  let t = html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+  t = t.replace(/<style[\s\S]*?<\/style>/gi, ' ')
+  t = t.replace(/<br\s*\/?>/gi, '\n')
+  t = t.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n')
+  t = t.replace(/<[^>]+>/g, ' ')
+  t = decodeXmlEntities(t)
+  t = t.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+  return t
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, ms = 15000): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function extractYouTubeTranscript(target: string): Promise<{ text: string; title: string }> {
+  const id = youtubeVideoId(target)
+  if (!id) throw new Error('Não consegui identificar o vídeo do YouTube.')
+
+  const attempts: { url: string; headers: Record<string, string> }[] = [
+    {
+      url: `https://www.youtube.com/watch?v=${id}`,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' },
+    },
+    {
+      url: `https://m.youtube.com/watch?v=${id}`,
+      headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' },
+    },
+  ]
+
+  let html = ''
+  for (const attempt of attempts) {
+    const res = await fetchWithTimeout(attempt.url, { headers: attempt.headers })
+    if (res.ok) {
+      html = await res.text()
+      break
+    }
+  }
+  if (!html) {
+    throw new Error('O YouTube não respondeu (limitou o acesso do servidor). Tente de novo em instantes.')
+  }
+
+  const titleMatch = html.match(/<title>([^<]*)<\/title>/)
+  const title = titleMatch ? titleMatch[1].replace(/- YouTube$/, '').trim() : 'YouTube'
+
+  const tracksMatch = html.match(/"captionTracks":(\[[\s\S]*?\])/)
+  if (!tracksMatch) {
+    throw new Error('Esse vídeo não tem legendas publicadas (ou as legendas estão desabilitadas).')
+  }
+  let tracks: { baseUrl?: string; languageCode?: string; name?: { simpleText?: string } }[]
+  try {
+    tracks = JSON.parse(tracksMatch[1])
+  } catch {
+    throw new Error('Não consegui ler as legendas desse vídeo.')
+  }
+  if (!tracks.length) throw new Error('Esse vídeo não tem legendas publicadas.')
+
+  const preferred = tracks.find((t) => (t.languageCode ?? '').toLowerCase().startsWith('pt'))
+  const track = preferred ?? tracks[0]
+  const baseUrl = track?.baseUrl
+  if (!baseUrl) throw new Error('Legendas indisponíveis para esse vídeo.')
+
+  const captionsRes = await fetchWithTimeout(baseUrl.replace(/\\u0026/g, '&'))
+  if (!captionsRes.ok) throw new Error('Falha ao baixar as legendas (HTTP ' + captionsRes.status + ').')
+  const xml = await captionsRes.text()
+
+  const segments = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)]
+  if (!segments.length) throw new Error('As legendas estão vazias.')
+  const text = segments
+    .map((m) => decodeXmlEntities(m[1] ?? '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n')
+  if (!text) throw new Error('As legendas estão vazias.')
+  return { text, title }
+}
+
+async function extractGoogleDocs(target: string): Promise<{ text: string; title: string }> {
+  const u = new URL(target)
+  const m = u.pathname.match(/\/d\/([^/]+)/)
+  if (!m) throw new Error('Link de Google Docs inválido. Use um link de documento (docs.google.com/document/d/...).')
+  const id = m[1]!
+  const exportRes = await fetchWithTimeout(
+    `https://docs.google.com/document/d/${id}/export?format=txt`,
+    { headers: { 'Accept-Language': 'pt-BR,pt;q=0.8' } },
+  )
+  if (!exportRes.ok) {
+    throw new Error(
+      'Não consegui abrir o documento. Confira se o link é público ou tem "qualquer pessoa com o link" habilitado.',
+    )
+  }
+  const text = (await exportRes.text()).trim()
+  if (!text) throw new Error('O documento está vazio.')
+  return { text, title: `Google Docs ${id.slice(0, 8)}` }
+}
+
+async function extractGenericText(target: string): Promise<{ text: string; title: string }> {
+  const res = await fetchWithTimeout(target, {
+    headers: { 'User-Agent': 'Mozilla/5.0 Alvoprompt', 'Accept-Language': 'pt-BR,pt;q=0.8' },
+  })
+  if (!res.ok) throw new Error(`Falha ao buscar o link (HTTP ${res.status}).`)
+  const contentType = res.headers.get('content-type') ?? ''
+  if (contentType.includes('application/pdf')) {
+    throw new Error('PDFs devem ser importados como arquivo nesta versão.')
+  }
+  let text = (await res.text()).trim()
+  if (!text) throw new Error('O link retornou conteúdo vazio.')
+  if (contentType.includes('text/html') || /^</.test(text)) {
+    text = htmlToText(text)
+    if (!text) throw new Error('O link não contém texto legível.')
+  }
+  return { text, title: uTitle(target) }
+}
+
+function uTitle(target: string): string {
+  try {
+    const u = new URL(target)
+    return u.hostname.replace(/^www\./, '') + u.pathname.replace(/\/$/, '') || u.hostname
+  } catch {
+    return 'Importado de link'
+  }
 }
 
 export default {
@@ -48,12 +218,20 @@ export default {
       const bytes = new Uint8Array(await audio.arrayBuffer())
       try {
         const result = (await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
-          audio: [...bytes],
+          audio: bytesToBase64(bytes),
           task: 'transcribe',
           language: lang,
           timestamp_granularities: ['word'],
-        })) as { text: string; words?: { word: string; start: number; end: number }[] }
-        return json({ result })
+        })) as {
+          text: string
+          segments?: {
+            start: number
+            end: number
+            words?: { word: string; start: number; end: number }[]
+          }[]
+        }
+        const words = (result.segments ?? []).flatMap((s) => s.words ?? [])
+        return json({ result: { text: result.text ?? '', words } })
       } catch (err) {
         return json({ error: (err as Error).message }, 500)
       }
@@ -62,16 +240,34 @@ export default {
     if (url.pathname === '/tts' && request.method === 'POST') {
       const { text, lang } = (await request.json()) as { text?: string; lang?: string }
       if (!text) return json({ error: 'Campo "text" ausente.' }, 400)
+      const langCode = lang ?? 'pt-br'
+
       try {
         const result = (await env.AI.run('@cf/myshell-ai/melotts', {
-          text,
-          lang: lang ?? 'pt-br',
+          prompt: text,
+          lang: langCode,
         })) as { audio: number[] }
         return new Response(toArrayBuffer(result.audio), {
           headers: { 'Content-Type': 'audio/wav', ...CORS_HEADERS },
         })
-      } catch (err) {
-        return json({ error: (err as Error).message }, 500)
+      } catch {
+        // tenta o modelo de fala da Deepgram
+      }
+
+      try {
+        const resp = (await env.AI.run(
+          '@cf/deepgram/aura-1',
+          { text, container: 'wav', encoding: 'linear16', sample_rate: 24000, speaker: 'asteria' },
+          { returnRawResponse: true },
+        )) as Response
+        const headers = new Headers(resp.headers)
+        headers.set('Access-Control-Allow-Origin', '*')
+        return new Response(resp.body, { status: resp.status, headers })
+      } catch {
+        return json(
+          { error: 'Dublagem indisponível no momento. O modelo MeloTTS está fora do ar nesta conta e o Aura não respondeu. Tente mais tarde ou use a leitura do navegador.' },
+          503,
+        )
       }
     }
 
@@ -92,6 +288,105 @@ export default {
       } catch (err) {
         return json({ error: (err as Error).message }, 500)
       }
+    }
+
+    if (url.pathname === '/import-url' && request.method === 'POST') {
+      const { url: target } = (await request.json()) as { url?: string }
+      if (!target) return json({ error: 'Campo "url" ausente.' }, 400)
+      let parsed: URL
+      try {
+        parsed = new URL(target)
+      } catch {
+        return json({ error: 'URL inválida.' }, 400)
+      }
+      try {
+        if (/(youtube\.com|youtu\.be)/i.test(parsed.hostname)) {
+          return json({ result: await extractYouTubeTranscript(target) })
+        }
+        if (/docs\.google\.com/i.test(parsed.hostname)) {
+          return json({ result: await extractGoogleDocs(target) })
+        }
+        return json({ result: await extractGenericText(target) })
+      } catch (err) {
+        return json({ error: (err as Error).message }, 502)
+      }
+    }
+
+    if (url.pathname === '/avatar' && request.method === 'POST') {
+      const { prompt } = (await request.json()) as { prompt?: string }
+      if (!prompt) return json({ error: 'Campo "prompt" ausente.' }, 400)
+      try {
+        const result = (await env.AI.run('@cf/black-forest-labs/flux-1-schnell', {
+          prompt: `${prompt}, retrato profissional em estúdio, iluminação suave, alta qualidade`,
+          steps: 4,
+        })) as { image?: ArrayBuffer | number[] | string }
+        let bytes: ArrayBuffer
+        if (typeof result.image === 'string') {
+          const bin = atob(result.image)
+          const arr = new Uint8Array(bin.length)
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+          bytes = arr.buffer
+        } else if (Array.isArray(result.image)) {
+          bytes = new Uint8Array(result.image).buffer
+        } else if (result.image instanceof ArrayBuffer) {
+          bytes = result.image
+        } else {
+          throw new Error('O modelo de imagem não retornou dados.')
+        }
+        const head = new Uint8Array(bytes.slice(0, 4))
+        const isPng =
+          head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47
+        return new Response(bytes, {
+          headers: { 'Content-Type': isPng ? 'image/png' : 'image/jpeg', ...CORS_HEADERS },
+        })
+      } catch (err) {
+        return json({ error: (err as Error).message }, 500)
+      }
+    }
+
+    // ---- Sync de roteiros (KV, protegido por frase-chave) ----
+    if (url.pathname === '/sync') {
+      const pass = (request.headers.get('x-sync-pass') ?? '').trim()
+      if (pass.length < 4) {
+        return json({ error: 'Frase-chave muito curta (mínimo 4 caracteres).' }, 400)
+      }
+      const key = await syncKey(pass)
+
+      if (request.method === 'GET') {
+        const raw = await env.ALVOPROMPT_SYNC.get(key)
+        if (!raw) return json({ scripts: [] })
+        try {
+          const parsed = JSON.parse(raw) as { scripts?: unknown }
+          return json({ scripts: Array.isArray(parsed.scripts) ? parsed.scripts : [] })
+        } catch {
+          return json({ scripts: [] })
+        }
+      }
+
+      if (request.method === 'PUT') {
+        const body = (await request.json().catch(() => null)) as { scripts?: unknown } | null
+        const scripts = body?.scripts
+        if (!Array.isArray(scripts)) {
+          return json({ error: 'Corpo deve ser { scripts: [...] }.' }, 400)
+        }
+        const sanitized = scripts.map((s) => {
+          const rec = (s ?? {}) as Record<string, unknown>
+          return {
+            key: typeof rec.key === 'string' && rec.key ? rec.key : crypto.randomUUID(),
+            title: typeof rec.title === 'string' ? rec.title : '',
+            content: typeof rec.content === 'string' ? rec.content : '',
+            tags: Array.isArray(rec.tags) ? rec.tags.filter((t) => typeof t === 'string') : [],
+            createdAt: typeof rec.createdAt === 'number' ? rec.createdAt : Date.now(),
+            updatedAt: typeof rec.updatedAt === 'number' ? rec.updatedAt : Date.now(),
+          }
+        })
+        await env.ALVOPROMPT_SYNC.put(key, JSON.stringify({ scripts: sanitized }), {
+          expirationTtl: 60 * 60 * 24 * 90,
+        })
+        return json({ ok: true, count: sanitized.length })
+      }
+
+      return json({ error: 'Método não permitido em /sync.' }, 405)
     }
 
     // ---- Armazenamento de mídia no R2 ----

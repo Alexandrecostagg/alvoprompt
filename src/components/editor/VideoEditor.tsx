@@ -5,6 +5,7 @@ import { findFillers } from '../../lib/text'
 import { autoCutRanges, detectSpeechRanges, estimateWordTimings, totalRangesDuration } from '../../lib/cuts'
 import { computeFacePath, cropCenteredOnFace, faceTrackingSupported, type FaceSample } from '../../lib/faceTrack'
 import { parseClipPrompt, type ClipPromptResult } from '../../lib/clipPrompt'
+import { generateAvatar } from '../../lib/cloudflare'
 import {
   CAPTION_THEMES,
   computeCrop,
@@ -58,6 +59,11 @@ export default function VideoEditor() {
   const logoFileRef = useRef<HTMLInputElement>(null)
   const musicFileRef = useRef<HTMLInputElement>(null)
 
+  const [avatarPrompt, setAvatarPrompt] = useState('')
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+
   const [motion, setMotion] = useState<MotionPreset>('none')
   const [chromaEnabled, setChromaEnabled] = useState(false)
   const [chromaColor, setChromaColor] = useState('#00b140')
@@ -70,6 +76,7 @@ export default function VideoEditor() {
   const [error, setError] = useState<string | null>(null)
   const [outUrl, setOutUrl] = useState<string | null>(null)
   const [reframe, setReframe] = useState(false)
+  const [eyeContact, setEyeContact] = useState(false)
   const facePathRef = useRef<FaceSample[] | null>(null)
   const [promptText, setPromptText] = useState('')
   const [introEnabled, setIntroEnabled] = useState(false)
@@ -176,7 +183,7 @@ export default function VideoEditor() {
 
   if (!recording) {
     return (
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-4 px-6 py-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-4 px-4 py-8 sm:px-6">
         <p style={{ color: 'var(--muted)' }}>Nenhuma gravação para editar.</p>
         <button
           onClick={() => setView('prompter')}
@@ -225,6 +232,37 @@ export default function VideoEditor() {
     }
   }
 
+  const handleAvatar = async () => {
+    if (!avatarPrompt.trim() || avatarBusy) return
+    setAvatarBusy(true)
+    setAvatarError(null)
+    try {
+      const blob = await generateAvatar(avatarPrompt.trim())
+      const url = URL.createObjectURL(blob)
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+      setAvatarPreview(url)
+    } catch (err) {
+      setAvatarError((err as Error).message)
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  const applyAvatarAsLogo = async () => {
+    if (!avatarPreview) return
+    const img = new Image()
+    img.onload = () => setLogo(img)
+    img.src = avatarPreview
+  }
+
+  const downloadAvatar = () => {
+    if (!avatarPreview) return
+    const a = document.createElement('a')
+    a.href = avatarPreview
+    a.download = 'alvoprompt-avatar.png'
+    a.click()
+  }
+
   const ensureFacePath = async (signal?: AbortSignal) => {
     if (!reframe || !recording) return null
     if (!facePathRef.current) {
@@ -268,7 +306,7 @@ export default function VideoEditor() {
       const facePath = await ensureFacePath(controller.signal)
       const cropAt =
         facePath && aspect !== 'original'
-          ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, targetW, targetH)
+          ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, targetW, targetH, eyeContact)
           : undefined
       const blob = await renderVideo({
         sourceBlob: recording.blob,
@@ -346,7 +384,7 @@ export default function VideoEditor() {
     try {
       const facePath = await ensureFacePath(controller.signal)
       const cropAt = facePath
-        ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, target.w!, target.h!)
+        ? (t: number) => cropCenteredOnFace(facePath, t, meta.w, meta.h, target.w!, target.h!, eyeContact)
         : undefined
       for (let i = 0; i < clips.length; i++) {
         const idx = i
@@ -416,7 +454,8 @@ export default function VideoEditor() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-6">      <div className="mb-4 flex items-center justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-6 sm:px-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setView('prompter')}
@@ -483,15 +522,28 @@ export default function VideoEditor() {
             </div>
             {aspect !== 'original' &&
               (faceTrackingSupported() ? (
-                <label className="mt-2 flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
-                  <input
-                    type="checkbox"
-                    checked={reframe}
-                    onChange={(e) => setReframe(e.target.checked)}
-                    className="h-4 w-4 accent-cyan-400"
-                  />
-                  Reframe automático — segue o rosto
-                </label>
+                <>
+                  <label className="mt-2 flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                    <input
+                      type="checkbox"
+                      checked={reframe}
+                      onChange={(e) => setReframe(e.target.checked)}
+                      className="h-4 w-4 accent-cyan-400"
+                    />
+                    Reframe automático — segue o rosto
+                  </label>
+                  {reframe && (
+                    <label className="mt-1 flex items-center gap-2 text-sm" style={{ color: 'var(--text)' }}>
+                      <input
+                        type="checkbox"
+                        checked={eyeContact}
+                        onChange={(e) => setEyeContact(e.target.checked)}
+                        className="h-4 w-4 accent-cyan-400"
+                      />
+                      Eye contact fix — olhos no terço superior
+                    </label>
+                  )}
+                </>
               ) : (
                 <p className="mt-2 text-[11px]" style={{ color: 'var(--muted)' }}>
                   Reframe automático exige Chrome/Edge (API FaceDetector).
@@ -540,7 +592,7 @@ export default function VideoEditor() {
               )}
             </div>
             {burnCaptions && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {CAPTION_THEMES.filter((t) => t.key !== 'none').map((t) => (
                   <button
                     key={t.key}
@@ -620,6 +672,60 @@ export default function VideoEditor() {
                   />
                 </label>
               )}
+              <div className="rounded-xl border p-3" style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.2)' }}>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
+                  🪄 Avatar IA (AI Twin)
+                </p>
+                <textarea
+                  value={avatarPrompt}
+                  onChange={(e) => setAvatarPrompt(e.target.value)}
+                  placeholder="Descreva o apresentador do vídeo, ex.: mulher jovem, cabelo castanho, blazer azul, fundo de estúdio neutro"
+                  className="w-full rounded-lg border bg-transparent px-3 py-2 text-xs text-white outline-none"
+                  style={{ borderColor: 'var(--border)' }}
+                  rows={2}
+                />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => void handleAvatar()}
+                    disabled={avatarBusy || !avatarPrompt.trim()}
+                    className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40"
+                    style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                  >
+                    {avatarBusy ? 'Gerando...' : 'Gerar avatar'}
+                  </button>
+                  {avatarPreview && (
+                    <>
+                      <button
+                        onClick={() => void applyAvatarAsLogo()}
+                        className="rounded-lg border px-3 py-1.5 text-xs"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                      >
+                        Usar como logo
+                      </button>
+                      <button
+                        onClick={downloadAvatar}
+                        className="rounded-lg border px-3 py-1.5 text-xs"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                      >
+                        Baixar PNG
+                      </button>
+                    </>
+                  )}
+                </div>
+                {avatarError && (
+                  <p className="mt-2 text-[11px]" style={{ color: 'var(--danger)' }}>
+                    {avatarError}
+                  </p>
+                )}
+                {avatarPreview && (
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar gerado por IA"
+                    className="mt-3 h-28 w-28 rounded-xl border object-cover"
+                    style={{ borderColor: 'var(--border)' }}
+                  />
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => musicFileRef.current?.click()}
@@ -1073,7 +1179,7 @@ export default function VideoEditor() {
                 ✓ Vídeo gerado
               </p>
               <video src={outUrl} controls playsInline className="mb-3 max-h-48 w-full rounded-lg" />
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <a
                   href={outUrl}
                   download={`alvoprompt-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}

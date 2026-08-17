@@ -12,6 +12,11 @@ binding = "AI"
 binding = "alvoprompt_media"
 bucket_name = "alvoprompt-media"
 
+# KV (plano gratuito: 100k leituras/dia) — sync de roteiros por frase-chave
+[[kv_namespaces]]
+binding = "ALVOPROMPT_SYNC"
+id = "7f2df53777804be2aefce83dd26e3945"
+
 # Uso local: npx wrangler dev --port 8787
 # Publicar: npx wrangler deploy
 # CORS liberado para qualquer origem (desenvolvimento)

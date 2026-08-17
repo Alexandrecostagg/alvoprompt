@@ -85,7 +85,7 @@ src/
 │   ├── control/ControlRoom.tsx   # Web Control Room (pareamento + painel de controle)
 │   ├── control/QrCode.tsx        # QR do código de pareamento (qrcode.react)
 │   ├── control/QrScanner.tsx     # leitor de QR pela câmera (jsQR, code-split)
-│   ├── SyncControl.tsx           # login/sync Firebase (☁️ no header, lazy-loaded)
+│   ├── SyncControl.tsx           # sync em nuvem por frase-chave (☁️ no header)
 │   └── prompter/
 │       ├── PrompterView.tsx      # prompter full-screen (texto + câmera + gravação + legendas)
 │       ├── SettingsPanel.tsx     # ajustes de rolagem, texto, câmera e enquadramento
@@ -107,8 +107,8 @@ src/
 │   ├── cuts.ts                   # cortes automáticos por palavra (timeline) e por análise de áudio RMS (remoção de pausas/silêncios)
 │   ├── faceTrack.ts              # reframe com tracking de rosto (Shape Detection API → crop dinâmico)
 │   ├── clipPrompt.ts             # comandos em linguagem natural p/ cortar/formatar ("de 1:30 a 2:15", "remove silêncio")
-│   ├── firebase.ts               # init lazy do Firebase (config via VITE_FIREBASE_*)
-│   ├── sync.ts                   # sync Firestore (roteiros → nuvem e vice-versa)
+│   ├── sync.ts                   # merge/upload/download de roteiros (KV via Worker)
+│   ├── syncWorker.ts             # cliente do endpoint /sync (frase-chave)
 │   ├── cloudflare.ts             # cliente do Worker (Whisper/TTS/tradução)
 │   ├── text.ts                   # tokens, normalização, similaridade, fillers, stats
 │   └── types.ts                  # tipos e settings padrão
@@ -117,24 +117,36 @@ src/
 
 ## Serviços em nuvem (planos gratuitos)
 
-### Firebase (sincronização de roteiros) — ✅ configurado
+### Nuvem Alvoprompt (sincronização de roteiros) — ✅ ativo
 
-Projeto **`alvoprompt`** já criado e ligado (config em `.env.local`):
-- **Firestore** criado na região `southamerica-east1` com regras (`.env` → exigem login)
-- **App web** registrado; Auth **E-mail/Senha** precisa ser ativado em:
-  `console.firebase.google.com/project/alvoprompt/authentication` → E-mail/Senha → habilitar → Salvar
+Sync sem cadastro por **frase-chave** (o mesmo segredo em outro dispositivo acessa os mesmos
+roteiros). Botão **☁️ Sincronizar** no topo: cria a frase-chave, sincroniza (merge por roteiro,
+o mais recente vence) e envia alterações automaticamente. Dados ficam no **Cloudflare KV** por
+90 dias (expiração). Implementação: `src/lib/sync.ts`, `src/lib/syncWorker.ts`,
+`src/components/SyncControl.tsx` e endpoint `GET/PUT /sync` no Worker.
 
-Com o Auth ativo, o botão **☁️ Entrar** no topo cria conta/loga; os roteiros são enviados
-para a coleção `scripts` e alterações remotas são baixadas automaticamente
-(`src/lib/firebase.ts` e `src/lib/sync.ts`).
+> **Nota**: quem souber sua frase-chave acessa seus roteiros — escolha uma frase só sua.
+> Roteiros antigos recebem uma `key` (UUID) estável automaticamente na primeira sincronização.
 
-### Cloudflare (transcrição Whisper, TTS, tradução e mídia) — ✅ configurado
+### Cloudflare (transcrição Whisper, TTS, tradução, sync e mídia) — ✅ configurado
 
 - **Worker `alvoprompt-api`** publicado: https://alvoprompt-api.alexandrecostagg.workers.dev
 - **R2 bucket `alvoprompt-media`** criado (binding `alvoprompt_media` no Worker)
-- Endpoints: `POST /transcribe` (Whisper), `POST /tts` (MeloTTS), `POST /translate` (m2m100),
-  `PUT/GET/DELETE /media/:key` (R2)
+- **KV `ALVOPROMPT_SYNC`** criado (binding no Worker; sync de roteiros por frase-chave)
+- Endpoints: `POST /transcribe` (Whisper), `POST /tts` (MeloTTS → fallback Aura), `POST /translate` (m2m100),
+  `POST /import-url` (YouTube/Google Docs/URL genérica), `POST /avatar` (geração de imagem Flux),
+  `PUT/GET/DELETE /media/:key` (R2), `GET/PUT /sync` (KV, header `x-sync-pass`)
 - Código em `api/transcribe`; cliente em `src/lib/cloudflare.ts`
+
+> **Nota sobre YouTube**: o YouTube bloqueia IPs de datacenter, então a transcrição via
+> legenda pode falhar (HTTP 429) dependendo do vídeo/horário. Google Docs (export txt) e
+> páginas genéricas funcionam de forma confiável.
+
+## PWA instalável
+
+O app é uma PWA instalável (manifest + service worker via `vite-plugin-pwa`): instale pelo
+navegador (Chrome/Edge: ícone na barra de endereço; iOS Safari: Compartilhar → Adicionar à
+Tela de Início). Funciona offline após o primeiro acesso.
 
 ## App mobile (Capacitor — iOS e Android)
 
@@ -154,7 +166,8 @@ npm run ios       # build + sync + abre o Xcode
 
 - [x] **Fase 1 (MVP)** — prompter core: VoiceTrack, rolagem fixa/manual, modo espelho, câmera + gravação, biblioteca local
 - [x] **Fase 2** — gerador de roteiros IA, melhorar roteiro, títulos & ganchos **+ hashtags**, análise de roteiro (palavras-chave + duração), remoção de fillers/vícios de linguagem, guia de enquadramento 9:16/1:1/16:9, legendas automáticas com export SRT (Web Speech API), tradução de legendas para 70+ idiomas (DeepSeek), **editor de vídeo** (redimensionamento 9:16/1:1/16:9, corte por palavras da transcrição, temas de legenda queimadas no vídeo — canvas + MediaRecorder), import .docx/PDF/link
-  - [ ] import áudio (transcrição) e link YouTube/Google Docs (exigem backend)
-- [x] **Fase 3 (parcial)** — **Web Control Room** (controlar o prompter de outro aparelho na mesma rede: pareamento sem servidor via WebRTC/DataChannel por código **ou QR escaneado pela câmera**, enviar roteiro, play/pause, seek, espelhar, open mic, status em tempo real), **mírula de contato visual** (dot no centro da câmera), **brand kit no editor** (logo sobreposta + trilha sonora com mix de áudio no vídeo exportado), **green screen (chroma key)** com troca de cor de fundo e suavização, **movimento de câmera (Ken Burns)** no editor de vídeo (zoom-in/zoom-out/pan esquerda-direita por trecho), **B-rolls automáticos** (corte de pausas/silêncios usando o timing das palavras da transcrição **ou análise do áudio por RMS** — funciona até sem transcrição, com limiar de pausa, margem e sensibilidade ajustáveis — tudo offline no editor), **modo tempo-alvo** (terminar o roteiro em X minutos), **atalhos por gamepad/foot pedal**, **fábrica de clipes 9:16** (1 vídeo → N shorts com legendas queimadas e word highlight), **reframe automático seguindo o rosto** (Shape Detection API) e **comandos em linguagem natural** ("pega a parte de 1:30 a 2:15", "corte os primeiros 20s", "remove o silêncio"), **intro/outro de marca** (cards com gradiente no início/fim do vídeo), **fontes p/ dislexia + RTL**, **calculadora de tempo/fala**
-  - [ ] editor IA (eye contact, dublagem), agendamento multi-canal, workspaces de equipe (exigem backend)
-- [ ] **Fase 4** — avatares/AI Twin, API, empacotamento nativo (Capacitor), PWA instalável
+  - [x] import **áudio (transcrição Whisper)** e **link YouTube/Google Docs** (via Worker Cloudflare)
+- [x] **Fase 3** — **Web Control Room** (controlar o prompter de outro aparelho na mesma rede: pareamento sem servidor via WebRTC/DataChannel por código **ou QR escaneado pela câmera**, enviar roteiro, play/pause, seek, espelhar, open mic, status em tempo real), **mírula de contato visual** (dot no centro da câmera), **brand kit no editor** (logo sobreposta + trilha sonora com mix de áudio no vídeo exportado), **green screen (chroma key)** com troca de cor de fundo e suavização, **movimento de câmera (Ken Burns)** no editor de vídeo (zoom-in/zoom-out/pan esquerda-direita por trecho), **B-rolls automáticos** (corte de pausas/silêncios usando o timing das palavras da transcrição **ou análise do áudio por RMS** — funciona até sem transcrição, com limiar de pausa, margem e sensibilidade ajustáveis — tudo offline no editor), **modo tempo-alvo** (terminar o roteiro em X minutos), **atalhos por gamepad/foot pedal**, **fábrica de clipes 9:16** (1 vídeo → N shorts com legendas queimadas e word highlight), **reframe automático seguindo o rosto** (Shape Detection API) **+ eye contact fix** (olhos no terço superior, offline) e **comandos em linguagem natural** ("pega a parte de 1:30 a 2:15", "corte os primeiros 20s", "remove o silêncio"), **intro/outro de marca** (cards com gradiente no início/fim do vídeo), **dublagem IA** (TTS MeloTTS no editor), **fontes p/ dislexia + RTL**, **calculadora de tempo/fala**
+  - [ ] agendamento multi-canal, workspaces de equipe (exigem backend)
+- [x] **Fase 4** — **PWA instalável**, **API** (Worker consumido pelo app: transcrição, TTS, import de URL, avatar), **geração de avatares** (AI Twin parte visual, Flux), **empacotamento nativo (Capacitor)** iOS e Android
+  - [ ] AI Twin completo (clone de rosto+voz para avatar falante)

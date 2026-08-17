@@ -82,13 +82,13 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <header
-        className="flex items-center justify-between border-b px-6 py-3"
+        className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-6"
         style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
       >
         <button onClick={() => setView('library')} className="cursor-pointer">
           <Logo />
         </button>
-        <div className="flex items-center gap-1 text-sm">
+        <div className="flex flex-wrap items-center gap-1 text-sm">
           <button
             onClick={() => setView('library')}
             className="rounded-lg px-3 py-1.5 transition-colors"

@@ -398,7 +398,7 @@ export default function PrompterView() {
             {currentScript.title || 'Sem título'}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
           <span
             className="rounded-full px-3 py-1 font-medium"
             style={{

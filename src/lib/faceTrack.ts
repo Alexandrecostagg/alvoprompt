@@ -4,6 +4,7 @@ export interface FaceSample {
   t: number
   cx: number
   cy: number
+  ey: number
   found: boolean
 }
 
@@ -82,6 +83,7 @@ export async function computeFacePath(
             t,
             cx: (b.x + b.width / 2) / video.videoWidth,
             cy: (b.y + b.height / 2) / video.videoHeight,
+            ey: (b.y + b.height * 0.38) / video.videoHeight,
             found: true,
           })
           found = true
@@ -89,7 +91,7 @@ export async function computeFacePath(
       } catch {
         // ignora falha pontual
       }
-      if (!found) samples.push({ t, cx: 0.5, cy: 0.5, found: false })
+      if (!found) samples.push({ t, cx: 0.5, cy: 0.5, ey: 0.5, found: false })
       onProgress?.(i + 1, total)
     }
     return samples
@@ -100,6 +102,8 @@ export async function computeFacePath(
 
 /**
  * Crop que mantém o rosto centralizado no reframe, interpolando entre as amostras.
+ * Com `eyeContact: true`, centraliza na linha dos olhos (em vez do centro do rosto)
+ * mantendo o olhar na faixa superior do quadro — aproximação offline do "eye contact fix".
  * Sem amostras válidas, cai no crop central padrão (computeCrop).
  */
 export function cropCenteredOnFace(
@@ -109,6 +113,7 @@ export function cropCenteredOnFace(
   srcH: number,
   targetW: number,
   targetH: number,
+  eyeContact = false,
 ): VideoCrop {
   const base = computeCrop(srcW, srcH, targetW, targetH)
   const found = path.filter((s) => s.found)
@@ -127,9 +132,12 @@ export function cropCenteredOnFace(
   const k = Math.max(0, Math.min(1, (t - prev.t) / span))
   const cx = prev.cx + (next.cx - prev.cx) * k
   const cy = prev.cy + (next.cy - prev.cy) * k
+  const ey = prev.ey + (next.ey - prev.ey) * k
 
+  const focusY = eyeContact ? ey : cy
+  const targetCy = eyeContact ? 0.38 : 0.5
+  let sy = focusY * srcH - targetCy * base.sh
   let sx = cx * srcW - base.sw / 2
-  let sy = cy * srcH - base.sh / 2
   sx = Math.max(0, Math.min(srcW - base.sw, sx))
   sy = Math.max(0, Math.min(srcH - base.sh, sy))
   return { sx, sy, sw: base.sw, sh: base.sh }

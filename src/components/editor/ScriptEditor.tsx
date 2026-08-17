@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { estimateDurationMinutes, wordCount } from '../../lib/text'
 import { formatElapsed } from '../../hooks/useRecorder'
 import { IMPORTABLE_EXT, extractTextFromFile, fileNameFromImport } from '../../lib/importers'
+import { speakWithTts } from '../../lib/cloudflare'
 import AiPanel from '../ai/AiPanel'
 import ScriptAnalysis from './ScriptAnalysis'
 
@@ -13,8 +14,11 @@ export default function ScriptEditor() {
     useAppStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const savedRef = useRef(currentScript)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const [dirty, setDirty] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [ttsBusy, setTtsBusy] = useState(false)
+  const [ttsPlaying, setTtsPlaying] = useState(false)
 
   useEffect(() => {
     savedRef.current = currentScript
@@ -32,7 +36,7 @@ export default function ScriptEditor() {
 
   if (!currentScript) {
     return (
-      <div className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+      <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
         <p style={{ color: 'var(--muted)' }}>Nenhum roteiro selecionado.</p>
         <button
           onClick={() => setView('library')}
@@ -65,9 +69,34 @@ export default function ScriptEditor() {
     }
   }
 
+  const toggleDubbing = async () => {
+    if (ttsBusy) return
+    const audio = audioRef.current
+    if (audio && ttsPlaying) {
+      audio.pause()
+      audio.currentTime = 0
+      setTtsPlaying(false)
+      return
+    }
+    if (!currentScript.content.trim()) return
+    setTtsBusy(true)
+    try {
+      const blob = await speakWithTts(currentScript.content.trim(), 'pt-br')
+      if (audio) {
+        audio.src = URL.createObjectURL(blob)
+        await audio.play()
+        setTtsPlaying(true)
+      }
+    } catch (err) {
+      window.alert(`Dublagem indisponível: ${(err as Error).message}`)
+    } finally {
+      setTtsBusy(false)
+    }
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => setView('library')}
           className="rounded-lg border px-3 py-1.5 text-sm"
@@ -75,7 +104,7 @@ export default function ScriptEditor() {
         >
           ← Biblioteca
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => fileRef.current?.click()}
             className="rounded-lg border px-3 py-1.5 text-sm"
@@ -92,6 +121,18 @@ export default function ScriptEditor() {
             }}
           >
             ✨ IA
+          </button>
+          <button
+            onClick={() => void toggleDubbing()}
+            disabled={ttsBusy || words === 0}
+            className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
+            style={{
+              borderColor: ttsPlaying ? 'var(--accent)' : 'var(--border)',
+              color: ttsPlaying ? 'var(--accent)' : 'var(--text)',
+            }}
+            title="Gera a narração do roteiro com IA (dublagem)"
+          >
+            {ttsBusy ? 'Gerando...' : ttsPlaying ? '⏹ Parar dublagem' : '🔊 Dublar'}
           </button>
           <button
             onClick={() => setShowAnalysis((v) => !v)}
@@ -134,6 +175,12 @@ export default function ScriptEditor() {
             e.target.value = ''
           }}
         />
+        <audio
+          ref={audioRef}
+          onEnded={() => setTtsPlaying(false)}
+          onPause={() => setTtsPlaying(false)}
+          className="hidden"
+        />
       </div>
 
       <input
@@ -164,7 +211,7 @@ export default function ScriptEditor() {
         style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
       />
 
-      <div className="mt-3 flex items-center justify-between text-xs" style={{ color: 'var(--muted)' }}>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs" style={{ color: 'var(--muted)' }}>
         <span>
           {words} palavras · duração estimada ~{formatElapsed(minutes * 60)} a {settings.wpm} wpm
         </span>

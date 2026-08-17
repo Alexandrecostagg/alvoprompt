@@ -16,7 +16,7 @@ export interface WhisperResult {
   words?: WhisperWord[]
 }
 
-function apiBase(): string {
+export function apiBase(): string {
   return (import.meta.env.VITE_CLOUDFLARE_API_BASE as string | undefined) || DEFAULT_BASE
 }
 
@@ -56,4 +56,26 @@ export async function translateCloud(text: string, targetLang: string, sourceLan
     body: JSON.stringify({ text, sourceLang, targetLang }),
   })) as { result: { translated_text?: string } }
   return payload.result.translated_text ?? ''
+}
+
+export async function fetchRemoteText(url: string): Promise<{ text: string; title: string }> {
+  const payload = (await fetchJson('/import-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })) as { result: { text: string; title: string } }
+  return payload.result
+}
+
+export async function generateAvatar(prompt: string): Promise<Blob> {
+  const res = await fetch(`${apiBase()}/avatar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  })
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null
+    throw new Error(body?.error ?? `Erro ${res.status} na geração de avatar`)
+  }
+  return res.blob()
 }

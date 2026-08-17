@@ -1,76 +1,94 @@
-import { useEffect, useState } from 'react'
-import type { User } from 'firebase/auth'
-import { firebaseConfigured, getFirebaseAsync } from '../lib/firebase'
-import { startSync, type SyncState } from '../lib/sync'
+import { useEffect, useRef, useState } from 'react'
+import { useAppStore } from '../store/useAppStore'
+import {
+  clearSyncPass,
+  saveSyncPass,
+  savedSyncPass,
+} from '../lib/syncWorker'
+import { pullReplace, pushAll, syncNow, type SyncStatus } from '../lib/sync'
 
 export default function SyncControl() {
-  const [state, setState] = useState<SyncState>('disabled')
-  const [user, setUser] = useState<User | null>(null)
+  const [status, setStatus] = useState<SyncStatus>('off')
   const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const connected = savedSyncPass() !== null
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (!firebaseConfigured()) return
-    return startSync((s, u) => {
-      setState(s)
-      setUser(u)
+    if (!connected) return
+    const unsub = useAppStore.subscribe((state, prev) => {
+      if (state.scripts === prev.scripts) return
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => {
+        void (async () => {
+          setStatus('syncing')
+          try {
+            await pushAll(savedSyncPass()!)
+            setStatus('synced')
+          } catch {
+            setStatus('error')
+          }
+        })()
+      }, 1500)
     })
-  }, [])
+    setStatus('synced')
+    return () => {
+      unsub()
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [connected])
 
-  if (!firebaseConfigured()) return null
-
-  const handleAuth = async (register: boolean) => {
-    if (!email || !password) {
-      setMsg('Preencha e-mail e senha.')
+  const run = async (fn: (p: string) => Promise<unknown>, okText: string) => {
+    const p = savedSyncPass() ?? pass
+    if (!p || p.trim().length < 4) {
+      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
       return
     }
     setBusy(true)
     setMsg(null)
+    setStatus('syncing')
     try {
-      const fb = await getFirebaseAsync()
-      if (!fb) {
-        setMsg('Firebase não configurado.')
-        return
-      }
-      const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import(
-        'firebase/auth'
-      )
-      if (register) await createUserWithEmailAndPassword(fb.auth, email, password)
-      else await signInWithEmailAndPassword(fb.auth, email, password)
-      setEmail('')
-      setPassword('')
-      setOpen(false)
+      await fn(p.trim())
+      setStatus('synced')
+      setMsg({ type: 'ok', text: okText })
     } catch (err) {
-      setMsg((err as Error).message)
+      setStatus('error')
+      setMsg({ type: 'err', text: (err as Error).message })
     } finally {
       setBusy(false)
     }
   }
 
-  const handleSignOut = async () => {
-    setBusy(true)
-    try {
-      const fb = await getFirebaseAsync()
-      if (!fb) return
-      const { signOut } = await import('firebase/auth')
-      await signOut(fb.auth)
-    } finally {
-      setBusy(false)
-      setOpen(false)
+  const handleConnect = () => {
+    if (pass.trim().length < 4) {
+      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
+      return
     }
+    saveSyncPass(pass)
+    setPass('')
+    void run(async (p) => {
+      const r = await syncNow(p)
+      return `Sincronizado: ${r.added} novo(s), ${r.kept} mantido(s).`
+    }, 'Sincronizado!')
+  }
+
+  const handleDisconnect = () => {
+    clearSyncPass()
+    setOpen(false)
+    setMsg(null)
+    setStatus('off')
   }
 
   const label =
-    state === 'synced'
-      ? '☁️ sincronizado'
-      : state === 'connecting'
-        ? '☁️ sincronizando…'
-        : state === 'error'
-          ? '☁️ erro de sync'
-          : '☁️ Entrar'
+    status === 'syncing'
+      ? '☁️ sincronizando…'
+      : status === 'error'
+        ? '☁️ erro de sync'
+        : connected
+          ? '☁️ sincronizado'
+          : '☁️ Sincronizar'
 
   return (
     <div className="relative">
@@ -78,10 +96,10 @@ export default function SyncControl() {
         onClick={() => setOpen((v) => !v)}
         className="ml-1 rounded-lg border px-2.5 py-1.5 text-sm transition-colors"
         style={{
-          borderColor: state === 'error' ? 'var(--danger)' : 'var(--border)',
-          color: state === 'error' ? 'var(--danger)' : 'var(--muted)',
+          borderColor: status === 'error' ? 'var(--danger)' : 'var(--border)',
+          color: status === 'error' ? 'var(--danger)' : 'var(--muted)',
         }}
-        title="Sincronização em nuvem (Firebase)"
+        title="Sincronização em nuvem (gratuita, via frase-chave)"
       >
         {label}
       </button>
@@ -90,19 +108,49 @@ export default function SyncControl() {
           className="absolute right-0 top-10 z-50 w-72 rounded-xl border p-4"
           style={{ background: 'var(--panel)', borderColor: 'var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.35)' }}
         >
-          {user ? (
+          {connected ? (
             <div className="space-y-3">
-              <p className="text-sm" style={{ color: 'var(--text)' }}>
-                Conectado como <span className="font-medium">{user.email}</span>
-              </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Roteiros sincronizados com a nuvem. Alterações em outros dispositivos são baixadas
-                automaticamente.
+                Roteiros sincronizados na nuvem. Use a mesma frase-chave em outro dispositivo para
+                acessar os mesmos roteiros.
               </p>
               <button
-                onClick={() => void handleSignOut()}
+                onClick={() => void run(async (p) => {
+                  const r = await syncNow(p)
+                  return `Sincronizado: ${r.added} novo(s), ${r.kept} mantido(s).`
+                }, 'Sincronizado!')}
                 disabled={busy}
-                className="w-full rounded-lg border py-2 text-sm font-medium disabled:opacity-40"
+                className="w-full rounded-lg py-2 text-sm font-semibold text-black disabled:opacity-40"
+                style={{ background: 'var(--accent)' }}
+              >
+                {busy ? 'Sincronizando…' : '🔄 Sincronizar agora'}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void run(pushAll, 'Roteiros enviados para a nuvem.')}
+                  disabled={busy}
+                  className="flex-1 rounded-lg border py-2 text-xs font-medium disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                >
+                  Enviar p/ nuvem
+                </button>
+                <button
+                  onClick={() => void run(pullReplace, 'Biblioteca substituída pela nuvem.')}
+                  disabled={busy}
+                  className="flex-1 rounded-lg border py-2 text-xs font-medium disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                >
+                  Baixar (substitui local)
+                </button>
+              </div>
+              {msg && (
+                <p className="text-xs" style={{ color: msg.type === 'err' ? 'var(--danger)' : 'var(--ok)' }}>
+                  {msg.text}
+                </p>
+              )}
+              <button
+                onClick={handleDisconnect}
+                className="w-full rounded-lg border py-2 text-sm font-medium"
                 style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
               >
                 Sair
@@ -110,49 +158,37 @@ export default function SyncControl() {
             </div>
           ) : (
             <div className="space-y-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="E-mail"
-                className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
-                style={{ borderColor: 'var(--border)' }}
-              />
+              <p className="text-sm" style={{ color: 'var(--text)' }}>
+                Sincronize seus roteiros entre dispositivos.
+              </p>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Senha"
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConnect()
+                }}
+                placeholder="Crie sua frase-chave"
                 className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
                 style={{ borderColor: 'var(--border)' }}
               />
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+                A mesma frase-chave em outro aparelho libera seus roteiros na nuvem. Sem cadastro,
+                sem e-mail — só guarde bem a frase.
+              </p>
               {msg && (
-                <p className="text-xs" style={{ color: 'var(--danger)' }}>
-                  {msg}
+                <p className="text-xs" style={{ color: msg.type === 'err' ? 'var(--danger)' : 'var(--ok)' }}>
+                  {msg.text}
                 </p>
               )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => void handleAuth(false)}
-                  disabled={busy}
-                  className="flex-1 rounded-lg py-2 text-sm font-semibold text-black disabled:opacity-40"
-                  style={{ background: 'var(--accent)' }}
-                >
-                  Entrar
-                </button>
-                <button
-                  onClick={() => void handleAuth(true)}
-                  disabled={busy}
-                  className="flex-1 rounded-lg border py-2 text-sm font-medium disabled:opacity-40"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-                >
-                  Criar conta
-                </button>
-              </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
-                Use o plano gratuito do Firebase Auth (e-mail/senha). O sync mantém uma cópia na
-                nuvem — seus roteiros continuam no dispositivo.
-              </p>
+              <button
+                onClick={handleConnect}
+                disabled={busy}
+                className="w-full rounded-lg py-2 text-sm font-semibold text-black disabled:opacity-40"
+                style={{ background: 'var(--accent)' }}
+              >
+                {busy ? 'Conectando…' : 'Conectar'}
+              </button>
             </div>
           )}
         </div>

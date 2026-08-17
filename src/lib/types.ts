@@ -1,5 +1,7 @@
 export interface Script {
   id?: number
+  /** Identificador estável entre dispositivos (UUID). Usado pelo sync em nuvem. */
+  key?: string
   title: string
   content: string
   createdAt: number

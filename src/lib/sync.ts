@@ -1,125 +1,88 @@
-import type { User } from 'firebase/auth'
-import { getFirebaseAsync } from './firebase'
-import { db as localDb, getScripts, saveScript, deleteScript } from './db'
-import type { Script } from './types'
 import { useAppStore } from '../store/useAppStore'
+import { db, getScripts, newScriptKey } from './db'
+import { pullFromCloud, pushToCloud, type CloudScript } from './syncWorker'
+import type { Script } from './types'
 
-export type SyncState = 'disabled' | 'signed-out' | 'connecting' | 'synced' | 'error'
+export type SyncStatus = 'off' | 'syncing' | 'synced' | 'error'
+
+/** Garante uma key estável para roteiros locais ainda sem key (criados antes do sync). */
+async function ensureKeys(scripts: Script[]): Promise<Script[]> {
+  const withKeys: Script[] = []
+  for (const s of scripts) {
+    if (s.key) {
+      withKeys.push(s)
+      continue
+    }
+    const next = { ...s, key: newScriptKey() }
+    if (s.id != null) await db.scripts.put(next)
+    withKeys.push(next)
+  }
+  return withKeys
+}
 
 /**
- * Sincronização em nuvem (Firestore):
- *  - Usuário faz login (email/senha) → os roteiros locais são enviados para a nuvem.
- *  - Alterações remotas (outro dispositivo) são baixadas para o IndexedDB local.
- *
- * Scaffold de integração. Para ativar, preencha as variáveis VITE_FIREBASE_* (ver .env.example).
+ * Mescla local + nuvem por key (o mais recente vence) e envia o resultado para a nuvem.
+ * Roteiros criados em outros dispositivos entram como novos.
  */
-export function startSync(
-  onState: (state: SyncState, user: User | null) => void,
-): () => void {
-  let stop = () => {}
+export async function syncNow(pass: string): Promise<{ added: number; kept: number }> {
+  const cloud = await pullFromCloud(pass)
+  const local = await ensureKeys(await getScripts())
+  const merged = new Map<string, Script>()
 
-  void (async () => {
-    const f = await getFirebaseAsync()
-    if (!f) {
-      onState('disabled', null)
-      return
+  for (const s of local) {
+    if (s.key) merged.set(s.key, s)
+  }
+
+  let added = 0
+  for (const c of cloud) {
+    const existing = merged.get(c.key)
+    if (!existing) {
+      merged.set(c.key, { ...c, id: undefined, key: c.key })
+      added++
+    } else if (c.updatedAt > existing.updatedAt) {
+      merged.set(c.key, {
+        ...existing,
+        title: c.title,
+        content: c.content,
+        tags: c.tags,
+        updatedAt: c.updatedAt,
+      })
     }
-    const { onAuthStateChanged } = await import('firebase/auth')
-    const { collection, doc, onSnapshot, setDoc } = await import('firebase/firestore')
-    const { auth, db } = f
-    const scriptsCol = collection(db, 'scripts')
+  }
 
-    let unsubSnapshot: (() => void) | null = null
-    let lastPushAt = new Map<number, number>()
+  const final = [...merged.values()]
+  await db.transaction('rw', db.scripts, async () => {
+    await db.scripts.clear()
+    await db.scripts.bulkAdd(final)
+  })
+  await useAppStore.getState().loadScripts()
+  await pushToCloud(pass, final)
+  return { added, kept: final.length - added }
+}
 
-    const pushLocal = async () => {
-      const scripts = await getScripts()
-      await Promise.all(
-        scripts.map((s) =>
-          setDoc(doc(scriptsCol, String(s.id)), {
-            title: s.title,
-            content: s.content,
-            tags: s.tags ?? [],
-            updatedAt: s.updatedAt,
-          }),
-        ),
-      )
-      lastPushAt = new Map(scripts.map((s) => [s.id!, s.updatedAt]))
-    }
+/** Envia a biblioteca local para a nuvem, substituindo o que está lá. */
+export async function pushAll(pass: string): Promise<number> {
+  const local = await ensureKeys(await getScripts())
+  const count = await pushToCloud(pass, local)
+  await useAppStore.getState().loadScripts()
+  return count
+}
 
-    const subscribeRemote = () => {
-      unsubSnapshot = onSnapshot(
-        scriptsCol,
-        (snap) => {
-          void (async () => {
-            for (const change of snap.docChanges()) {
-              const id = Number(change.doc.id)
-              const remote = change.doc.data() as Partial<Script> & {
-                updatedAt: number
-              }
-              if (change.type === 'removed') {
-                await deleteScript(id)
-                continue
-              }
-              if (change.type === 'added' || change.type === 'modified') {
-                const existing = (await getScripts()).find((s) => s.id === id)
-                if (existing && existing.updatedAt === remote.updatedAt) continue
-                const script = {
-                  id,
-                  title: remote.title ?? '',
-                  content: remote.content ?? '',
-                  tags: remote.tags,
-                  updatedAt: remote.updatedAt,
-                  createdAt: existing?.createdAt ?? remote.updatedAt,
-                }
-                if (existing) await saveScript(script)
-                else await localDb.scripts.add(script)
-              }
-            }
-            await useAppStore.getState().loadScripts()
-          })().catch((err) => {
-            console.error('Firestore snapshot handler error', err)
-            onState('error', null)
-          })
-        },
-        (err) => {
-          console.error('Firestore sync error', err)
-          onState('error', null)
-        },
-      )
-    }
-
-    const unwatchLocal = useAppStore.subscribe((state, prev) => {
-      if (state.scripts !== prev.scripts) void pushLocal()
-    })
-
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        onState('signed-out', null)
-        unsubSnapshot?.()
-        unsubSnapshot = null
-        return
-      }
-      onState('connecting', user)
-      void (async () => {
-        try {
-          await pushLocal()
-          if (!unsubSnapshot) subscribeRemote()
-          onState('synced', user)
-        } catch (err) {
-          console.error('Firebase sync failed', err)
-          onState('error', user)
-        }
-      })()
-    })
-
-    stop = () => {
-      unsubAuth()
-      unsubSnapshot?.()
-      unwatchLocal()
-      lastPushAt.clear()
-    }
-  })()
-
-  return () => stop()
+/** Substitui a biblioteca local pela versão da nuvem. */
+export async function pullReplace(pass: string): Promise<void> {
+  const cloud = await pullFromCloud(pass)
+  const rows: Script[] = cloud.map((c: CloudScript) => ({
+    id: undefined,
+    key: c.key,
+    title: c.title,
+    content: c.content,
+    tags: c.tags,
+    createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
+  }))
+  await db.transaction('rw', db.scripts, async () => {
+    await db.scripts.clear()
+    await db.scripts.bulkAdd(rows)
+  })
+  await useAppStore.getState().loadScripts()
 }

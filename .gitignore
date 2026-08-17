@@ -25,3 +25,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor (gerado)
+android/
+ios/
+
+# chaves de assinatura Android (não versionar)
+android/keystore.properties
+android/*.keystore
+
+# estado local do Wrangler e config pessoal de agentes de IA
+api/transcribe/.wrangler/
+.claude/

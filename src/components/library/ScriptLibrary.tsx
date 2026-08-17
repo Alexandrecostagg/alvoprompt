@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { estimateDurationMinutes, wordCount } from '../../lib/text'
 import { formatElapsed } from '../../hooks/useRecorder'
 import { IMPORTABLE_EXT, extractTextFromFile, extractTextFromUrl, fileNameFromImport } from '../../lib/importers'
+import { transcribeAudio } from '../../lib/cloudflare'
 import type { Script } from '../../lib/types'
 
 function relativeTime(ts: number): string {
@@ -20,10 +21,12 @@ export default function ScriptLibrary() {
   const { scripts, loading, removeScript, selectScript, setView, settings, openAiPanel } =
     useAppStore()
   const fileRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLInputElement>(null)
   const [showLinkImport, setShowLinkImport] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkBusy, setLinkBusy] = useState(false)
   const [linkError, setLinkError] = useState<string | null>(null)
+  const [audioBusy, setAudioBusy] = useState(false)
 
   const createNew = () => {
     selectScript({ title: 'Novo roteiro', content: '', createdAt: Date.now(), updatedAt: Date.now() })
@@ -72,14 +75,31 @@ export default function ScriptLibrary() {
     }
   }
 
+  const importAudio = async (file: File) => {
+    if (audioBusy) return
+    setAudioBusy(true)
+    setLinkError(null)
+    try {
+      const lang = (settings.voiceLang || 'pt-BR').split('-')[0] || 'pt'
+      const result = await transcribeAudio(file, lang)
+      if (!result.text?.trim()) throw new Error('A transcrição ficou vazia — verifique se há fala no áudio.')
+      openImported(fileNameFromImport(file.name) || 'Transcrito', result.text.trim())
+    } catch (err) {
+      setLinkError((err as Error).message)
+      setShowLinkImport(true)
+    } finally {
+      setAudioBusy(false)
+    }
+  }
+
   const openPrompter = (script: Script) => {
     selectScript(script)
     setView('prompter')
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-white">Meus roteiros</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
@@ -87,7 +107,7 @@ export default function ScriptLibrary() {
             dispositivo
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               setLinkError(null)
@@ -104,6 +124,14 @@ export default function ScriptLibrary() {
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             Importar arquivo
+          </button>
+          <button
+            onClick={() => audioRef.current?.click()}
+            disabled={audioBusy}
+            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+          >
+            {audioBusy ? 'Transcrevendo...' : '🎙 Importar áudio'}
           </button>
           <button
             onClick={createWithAi}
@@ -131,6 +159,17 @@ export default function ScriptLibrary() {
             e.target.value = ''
           }}
         />
+        <input
+          ref={audioRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) void importAudio(file)
+            e.target.value = ''
+          }}
+        />
       </div>
 
       {loading ? (
@@ -144,7 +183,7 @@ export default function ScriptLibrary() {
         >
           <p className="text-lg font-medium text-white">Nenhum roteiro ainda</p>
           <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
-            Crie um roteiro ou importe um arquivo .txt / .md / .docx / PDF para começar.
+            Crie um roteiro ou importe um arquivo .txt / .md / .docx / PDF / áudio para começar.
           </p>
           <button
             onClick={createNew}
@@ -219,8 +258,8 @@ export default function ScriptLibrary() {
           >
             <h3 className="mb-1 font-semibold text-white on-dark">Importar de link</h3>
             <p className="mb-4 text-xs" style={{ color: 'var(--muted)' }}>
-              Cole uma URL pública com texto (funciona quando o site permite acesso direto).
-              YouTube e Google Docs precisam de importação manual ou servidor (roadmap).
+              Cole uma URL pública. YouTube (transcrição via legendas), Google Docs e qualquer
+              página com texto são suportados pela API Alvoprompt.
             </p>
             <input
               autoFocus

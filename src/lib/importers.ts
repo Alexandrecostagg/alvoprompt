@@ -1,9 +1,11 @@
+import { fetchRemoteText } from './cloudflare'
+
 export const IMPORTABLE_EXT = '.txt,.md,.markdown,.text,.docx,.pdf'
 
 let workerConfigured = false
 
 export function fileNameFromImport(name: string): string {
-  return name.replace(/\.(txt|md|markdown|text|docx|pdf)$/i, '')
+  return name.replace(/\.(txt|md|markdown|text|docx|pdf|mp3|wav|ogg|webm|m4a|aac|flac)$/i, '')
 }
 
 export async function extractTextFromFile(file: File): Promise<string> {
@@ -58,6 +60,21 @@ async function extractPdf(file: File): Promise<string> {
   }
 }
 
+function htmlToText(html: string): string {
+  let t = html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+  t = t.replace(/<style[\s\S]*?<\/style>/gi, ' ')
+  t = t.replace(/<br\s*\/?>/gi, '\n')
+  t = t.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n')
+  t = t.replace(/<[^>]+>/g, ' ')
+  t = t
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+  return t.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 export async function extractTextFromUrl(rawUrl: string): Promise<string> {
   let u: URL
   try {
@@ -65,19 +82,29 @@ export async function extractTextFromUrl(rawUrl: string): Promise<string> {
   } catch {
     throw new Error('Link inválido. Informe uma URL completa (ex.: https://exemplo.com/texto).')
   }
-  if (/(youtube\.com|youtu\.be)/i.test(u.hostname)) {
-    throw new Error(
-      'Importar transcrição do YouTube exige um servidor de API (roadmap Fase 3). Cole o texto do roteiro direto no editor.',
-    )
+  const isYouTube = /(youtube\.com|youtu\.be)/i.test(u.hostname)
+  const isGoogleDocs = /docs\.google\.com/i.test(u.hostname)
+  if (isYouTube || isGoogleDocs) {
+    const { text } = await fetchRemoteText(rawUrl)
+    return text
   }
-  if (/docs\.google\.com/i.test(u.hostname)) {
-    throw new Error(
-      'Google Docs requer permissões. No documento use Arquivo > Baixar > Texto (.txt) e importe o arquivo aqui.',
-    )
+  try {
+    const res = await fetch(u, { mode: 'cors' })
+    if (!res.ok) throw new Error(`Falha ao buscar o link (HTTP ${res.status}).`)
+    let text = (await res.text()).trim()
+    if (!text) throw new Error('O link retornou conteúdo vazio.')
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('text/html') || /^</.test(text)) {
+      text = htmlToText(text)
+      if (!text) throw new Error('O link não contém texto legível.')
+    }
+    return text
+  } catch (err) {
+    const viaWorker = await fetchRemoteText(rawUrl).catch(() => {
+      throw new Error(
+        `Falha ao buscar o link (${(err as Error).message}). Verifique a conexão com a API (VITE_CLOUDFLARE_API_BASE).`,
+      )
+    })
+    return viaWorker.text
   }
-  const res = await fetch(u, { mode: 'cors' })
-  if (!res.ok) throw new Error(`Falha ao buscar o link (HTTP ${res.status}).`)
-  const text = (await res.text()).trim()
-  if (!text) throw new Error('O link retornou conteúdo vazio.')
-  return text
 }
