@@ -18,62 +18,200 @@
     />
     <style>
       :root {
-        --bg: #f4f5fa;
+        --bg: #f6f7fb;
         --surface: #ffffff;
-        --text: #1a1f2e;
+        --text: #10131f;
         --muted: #5b6472;
         --violet: #7c3aed;
         --indigo: #6366f1;
-        --cyan: #0891b2;
+        --cyan: #06b6d4;
       }
       html { scroll-behavior: smooth; }
-      body { font-family: "Lexend", system-ui, sans-serif; background: var(--bg); color: var(--text); }
-      p { text-align: justify; }
+      body {
+        font-family: "Lexend", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      ::selection { background: #7c3aed; color: #fff; }
+      ::-webkit-scrollbar { width: 10px; }
+      ::-webkit-scrollbar-track { background: #eef0f6; }
+      ::-webkit-scrollbar-thumb { background: linear-gradient(#7c3aed, #06b6d4); border-radius: 999px; }
+
+      /* Scroll progress */
+      #progress {
+        position: fixed; top: 0; left: 0; height: 3px; z-index: 100;
+        width: 0%;
+        background: linear-gradient(90deg, #7c3aed, #6366f1, #06b6d4);
+        box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
+      }
+
+      /* Gradient text */
       .grad-text {
         background: linear-gradient(90deg, #7c3aed 0%, #6366f1 45%, #0891b2 100%);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
+        animation: gradShift 6s ease infinite;
       }
+      @keyframes gradShift {
+        0%, 100% { background-position: 0% center; }
+        50% { background-position: 100% center; }
+      }
+
+      /* Buttons */
       .btn-primary {
+        position: relative; overflow: hidden;
         background: linear-gradient(90deg, #7c3aed, #6366f1);
-        color: #fff;
-        font-weight: 600;
+        color: #fff; font-weight: 600;
         box-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.6);
-        transition: all 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
       }
-      .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(99, 102, 241, 0.7); }
+      .btn-primary:hover {
+        transform: translateY(-2px); filter: brightness(1.07);
+        box-shadow: 0 16px 34px -10px rgba(99, 102, 241, 0.75);
+      }
+      .btn-primary::after {
+        content: ""; position: absolute; top: 0; left: -80%; width: 50%; height: 100%;
+        background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.55s ease;
+      }
+      .btn-primary:hover::after { left: 130%; }
+
+      /* Card base */
       .card {
         background: var(--surface);
         border: 1px solid rgba(15, 23, 42, 0.08);
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 30px -18px rgba(15, 23, 42, 0.25);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
       }
+      .card-hover:hover {
+        transform: translateY(-4px);
+        border-color: rgba(124, 58, 237, 0.35);
+        box-shadow: 0 20px 45px -18px rgba(99, 102, 241, 0.4);
+      }
+
       .tick { color: #059669; }
       .cross { color: #dc2626; }
       .chip {
         border: 1px solid #c7d2fe;
-        background: #eef2ff;
+        background: rgba(238, 242, 255, 0.9);
         color: #5b21b6;
+        backdrop-filter: blur(6px);
       }
+
+      /* Browser frame */
       .frame {
-        border-radius: 1rem;
+        border-radius: 1.1rem;
         border: 1px solid rgba(15, 23, 42, 0.1);
-        box-shadow: 0 30px 60px -30px rgba(15, 23, 42, 0.45);
+        box-shadow: 0 30px 70px -30px rgba(15, 23, 42, 0.45);
         overflow: hidden;
         background: #fff;
       }
-      .frame-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.08); }
-      .frame-dot { width: 10px; height: 10px; border-radius: 999px; }
-      details summary::-webkit-details-marker { display: none; }
-      details { transition: all 0.2s ease; }
-      .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+      .frame-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid rgba(15, 23, 42, 0.08); }
+      .frame-dot { width: 11px; height: 11px; border-radius: 999px; }
+
+      /* Mesh hero background */
+      .orb {
+        position: absolute; border-radius: 999px; filter: blur(90px); opacity: 0.55;
+        pointer-events: none;
+        animation: float 12s ease-in-out infinite;
+      }
+      @keyframes float {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(20px, -30px) scale(1.08); }
+      }
+      .bg-grid {
+        background-image:
+          linear-gradient(rgba(124, 58, 237, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 55%, transparent 100%);
+      }
+
+      /* Marquee */
+      @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+      }
+      .marquee-track { animation: marquee 26s linear infinite; }
+      .marquee:hover .marquee-track { animation-play-state: paused; }
+
+      /* Reveal on scroll */
+      .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s ease; }
       .reveal.in { opacity: 1; transform: none; }
+
+      /* Carousel */
+      .carousel-track { display: flex; transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
+      .carousel-dot { width: 8px; height: 8px; border-radius: 999px; background: #d3d7e3; transition: all 0.3s ease; cursor: pointer; }
+      .carousel-dot.active { width: 24px; background: linear-gradient(90deg, #7c3aed, #06b6d4); }
+
+      /* Tabs */
+      .tab-btn { transition: all 0.25s ease; }
+      .tab-btn.active {
+        background: linear-gradient(90deg, #7c3aed, #6366f1);
+        color: #fff;
+        box-shadow: 0 8px 20px -8px rgba(99, 102, 241, 0.7);
+        border-color: transparent;
+      }
+      .tab-panel { display: none; animation: fadeUp 0.45s ease; }
+      .tab-panel.active { display: block; }
+      @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+      /* Bento glow */
+      .bento { position: relative; overflow: hidden; }
+      .bento::before {
+        content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
+        background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), rgba(124, 58, 237, 0.12), transparent 40%);
+        transition: opacity 0.3s ease; pointer-events: none;
+      }
+      .bento:hover::before { opacity: 1; }
+
+      /* Table */
+      .cmp th, .cmp td { transition: background 0.2s ease; }
+      .cmp tbody tr:hover td { background: #f8f9fd; }
+      .cmp .col-alvo { background: #eef2ff; }
+
+      /* Testimonials */
+      @keyframes tscroll { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 1rem)); } }
+      .t-track { animation: tscroll 40s linear infinite; }
+      .t-wrap:hover .t-track { animation-play-state: paused; }
+
+      /* Accordion chevron */
+      details summary::-webkit-details-marker { display: none; }
+      details .chev { transition: transform 0.3s ease; }
+      details[open] .chev { transform: rotate(45deg); color: #6366f1; }
+
+      /* Back to top */
+      #toTop { opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+      #toTop.show { opacity: 1; visibility: visible; }
+
+      /* Nav active */
+      .nav-link.active { color: #10131f; }
+      .nav-link.active::after { width: 100%; }
+      .nav-link { position: relative; }
+      .nav-link::after {
+        content: ""; position: absolute; left: 0; bottom: -4px; height: 2px; width: 0%;
+        background: linear-gradient(90deg, #7c3aed, #06b6d4); border-radius: 999px;
+        transition: width 0.25s ease;
+      }
+
+      /* Pulse dot */
+      @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+        70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      }
+      .pulse { animation: pulseDot 2s infinite; }
     </style>
   </head>
   <body class="antialiased">
+    <div id="progress" aria-hidden="true"></div>
+
     <!-- NAV -->
-    <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f4f5fa]/85 backdrop-blur-md">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7fb]/80 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <a href="#top" class="flex items-center gap-2.5">
           <svg width="34" height="34" viewBox="0 0 48 48" fill="none" aria-hidden="true">
             <defs>
@@ -89,30 +227,47 @@
           </svg>
           <span class="text-lg font-bold tracking-tight text-slate-900">alvoprompt</span>
         </a>
-        <nav class="hidden items-center gap-7 text-sm font-medium text-slate-500 md:flex">
-          <a href="#app" class="transition-colors hover:text-slate-900">O app</a>
-          <a href="#recursos" class="transition-colors hover:text-slate-900">Recursos</a>
-          <a href="#comparativo" class="transition-colors hover:text-slate-900">Comparativo</a>
-          <a href="#precos" class="transition-colors hover:text-slate-900">Preços</a>
-          <a href="#faq" class="transition-colors hover:text-slate-900">FAQ</a>
+        <nav class="hidden items-center gap-7 text-sm font-medium text-slate-500 md:flex" id="navLinks">
+          <a href="#app" class="nav-link transition-colors hover:text-slate-900">O app</a>
+          <a href="#recursos" class="nav-link transition-colors hover:text-slate-900">Recursos</a>
+          <a href="#comparativo" class="nav-link transition-colors hover:text-slate-900">Comparativo</a>
+          <a href="#precos" class="nav-link transition-colors hover:text-slate-900">Preços</a>
+          <a href="#faq" class="nav-link transition-colors hover:text-slate-900">FAQ</a>
         </nav>
-        <a href="#precos" class="js-app btn-primary rounded-lg px-4 py-2 text-sm">Abrir o app</a>
+        <div class="flex items-center gap-3">
+          <a href="#precos" class="js-app btn-primary hidden rounded-lg px-4 py-2 text-sm sm:inline-flex">Abrir o app</a>
+          <button id="menuBtn" class="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 md:hidden" aria-label="Abrir menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="mobileMenu" class="hidden border-t border-black/5 bg-white px-6 py-4 md:hidden">
+        <div class="flex flex-col gap-3 text-sm font-medium text-slate-600">
+          <a href="#app" class="mobile-link py-1">O app</a>
+          <a href="#recursos" class="mobile-link py-1">Recursos</a>
+          <a href="#comparativo" class="mobile-link py-1">Comparativo</a>
+          <a href="#precos" class="mobile-link py-1">Preços</a>
+          <a href="#faq" class="mobile-link py-1">FAQ</a>
+          <a href="#precos" class="js-app btn-primary mt-2 rounded-lg px-4 py-2.5 text-center">Abrir o app</a>
+        </div>
       </div>
     </header>
 
     <!-- HERO -->
     <section id="top" class="relative overflow-hidden">
-      <div class="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[880px] -translate-x-1/2 rounded-full bg-indigo-300/40 blur-[120px]" aria-hidden="true"></div>
-      <div class="pointer-events-none absolute right-[-100px] top-40 h-[300px] w-[300px] rounded-full bg-cyan-300/30 blur-[90px]" aria-hidden="true"></div>
+      <div class="bg-grid pointer-events-none absolute inset-0" aria-hidden="true"></div>
+      <div class="orb left-[-120px] top-[-60px] h-[360px] w-[360px] bg-violet-300" aria-hidden="true"></div>
+      <div class="orb right-[-80px] top-32 h-[320px] w-[320px] bg-cyan-300" aria-hidden="true" style="animation-delay:-4s"></div>
+      <div class="orb bottom-[-120px] left-1/3 h-[300px] w-[300px] bg-indigo-300" aria-hidden="true" style="animation-delay:-8s"></div>
 
-      <div class="relative mx-auto max-w-5xl px-6 pb-16 pt-20 text-center">
+      <div class="relative mx-auto max-w-7xl px-6 pb-20 pt-16 text-center sm:pt-20">
         <span class="chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold">
-          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+          <span class="pulse h-2 w-2 rounded-full bg-emerald-500"></span>
           PT-BR first · core 100% offline · PWA instalável
         </span>
-        <h1 class="mt-7 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-6xl">
+        <h1 class="mx-auto mt-7 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-6xl">
           Seu texto no alvo,<br />
-          seus olhos na câmera.
+          seus olhos na <span class="grad-text">câmera</span>.
         </h1>
         <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500">
           O melhor do <span class="font-semibold text-slate-900">BIGVU</span>,
@@ -125,214 +280,383 @@
           <a href="#precos" class="js-app btn-primary rounded-xl px-7 py-3.5 text-base">Testar grátis</a>
           <a
             href="#app"
-            class="rounded-xl border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-slate-900 transition-colors hover:bg-slate-50"
+            class="group inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-slate-900 transition-colors hover:bg-slate-50"
           >
             Ver o app em ação
+            <svg class="transition-transform group-hover:translate-y-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </a>
         </div>
         <p class="mt-4 text-xs text-slate-400">Sem cartão de crédito · Gratuito para sempre</p>
 
-        <!-- Screenshot principal -->
-        <div class="frame mx-auto mt-14 max-w-4xl">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">alvoprompt — prompter</span>
+        <!-- Carrossel principal -->
+        <div class="mx-auto mt-14 max-w-4xl" data-carousel>
+          <div class="frame">
+            <div class="frame-bar bg-white">
+              <span class="frame-dot bg-red-400"></span>
+              <span class="frame-dot bg-amber-400"></span>
+              <span class="frame-dot bg-emerald-400"></span>
+              <span class="ml-3 flex items-center gap-2 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
+                <span data-carousel-label>alvoprompt — prompter</span>
+              </span>
+            </div>
+            <div class="relative overflow-hidden">
+              <div class="carousel-track" data-carousel-track>
+                <img src="img/app-prompter.png" alt="Prompter do Alvoprompt em tela cheia com o texto acompanhando a fala" class="w-full shrink-0" />
+                <img src="img/app-editor.png" alt="Editor de roteiro do Alvoprompt" class="w-full shrink-0" />
+                <img src="img/app-ia-panel.png" alt="Painel de IA do editor do Alvoprompt" class="w-full shrink-0" />
+                <img src="img/app-analise.png" alt="Painel de análise de roteiro do Alvoprompt" class="w-full shrink-0" />
+                <img src="img/app-controlroom.png" alt="Web Control Room do Alvoprompt" class="w-full shrink-0" />
+              </div>
+            </div>
           </div>
-          <img src="img/app-prompter.png" alt="Prompter do Alvoprompt em tela cheia com o texto acompanhando a fala" class="block w-full" />
+          <div class="mt-5 flex items-center justify-center gap-6">
+            <button class="carousel-arrow rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:border-indigo-300 hover:text-indigo-600" data-carousel-prev aria-label="Anterior">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="flex items-center gap-2" data-carousel-dots></div>
+            <button class="carousel-arrow rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:border-indigo-300 hover:text-indigo-600" data-carousel-next aria-label="Próxima">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- TRUST BAR -->
-    <section class="border-y border-black/5 bg-white">
-      <div class="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-6 py-8 text-center text-sm text-slate-500 md:grid-cols-4">
-        <div><span class="block text-xl font-bold text-slate-900">100%</span> offline-first</div>
-        <div><span class="block text-xl font-bold text-slate-900">0</span> dados coletados ou vendidos</div>
-        <div><span class="block text-xl font-bold text-slate-900">70+</span> idiomas de legendas</div>
-        <div><span class="block text-xl font-bold text-slate-900">PT-BR</span> reconhecimento nativo</div>
+    <!-- MARQUEE DE PÚBLICOS -->
+    <section class="overflow-hidden border-y border-black/5 bg-white py-5" aria-label="Feito para">
+      <div class="marquee flex overflow-hidden">
+        <div class="marquee-track flex shrink-0 items-center gap-10 pr-10 text-sm font-semibold text-slate-400">
+          <span class="flex items-center gap-2"><span class="text-lg">🎙️</span> Pregadores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">📈</span> Vendedores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎬</span> Criadores de conteúdo</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎓</span> Professores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎯</span> Coaches</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🤝</span> Times de marketing</span>
+          <span class="flex items-center gap-2"><span class="text-lg">📰</span> Jornalistas</span>
+          <span class="flex items-center gap-2"><span class="text-lg">💬</span> Comunicadores</span>
+        </div>
+        <div class="marquee-track flex shrink-0 items-center gap-10 pr-10 text-sm font-semibold text-slate-400" aria-hidden="true">
+          <span class="flex items-center gap-2"><span class="text-lg">🎙️</span> Pregadores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">📈</span> Vendedores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎬</span> Criadores de conteúdo</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎓</span> Professores</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🎯</span> Coaches</span>
+          <span class="flex items-center gap-2"><span class="text-lg">🤝</span> Times de marketing</span>
+          <span class="flex items-center gap-2"><span class="text-lg">📰</span> Jornalistas</span>
+          <span class="flex items-center gap-2"><span class="text-lg">💬</span> Comunicadores</span>
+        </div>
       </div>
     </section>
 
-    <!-- O APP EM IMAGENS -->
-    <section id="app" class="mx-auto max-w-6xl px-6 py-24">
+    <!-- TRUST BAR / CONTADORES -->
+    <section class="mx-auto max-w-6xl px-6 py-16">
+      <div class="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
+        <div class="reveal">
+          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="100">0</span>%</span>
+          <span class="mt-1 block text-sm text-slate-500">offline-first</span>
+        </div>
+        <div class="reveal" style="transition-delay:.05s">
+          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="0">0</span></span>
+          <span class="mt-1 block text-sm text-slate-500">dados coletados ou vendidos</span>
+        </div>
+        <div class="reveal" style="transition-delay:.1s">
+          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="70">0</span>+</span>
+          <span class="mt-1 block text-sm text-slate-500">idiomas de legendas</span>
+        </div>
+        <div class="reveal" style="transition-delay:.15s">
+          <span class="grad-text block text-4xl font-extrabold">PT-BR</span>
+          <span class="mt-1 block text-sm text-slate-500">reconhecimento nativo</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- O APP EM ABAS -->
+    <section id="app" class="mx-auto max-w-6xl px-6 py-20">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">O app</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Do roteiro ao vídeo pronto, sem trocar de app
+          Do roteiro ao vídeo pronto, <span class="grad-text">sem trocar de app</span>
         </h2>
         <p class="mt-4 text-slate-500">
           Biblioteca, editor, prompter e control room: tudo em uma interface limpa que funciona até no modo avião.
         </p>
       </div>
 
-      <div class="reveal mt-14 grid items-center gap-8 lg:grid-cols-2">
-        <div class="frame order-2 lg:order-1">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Biblioteca</span>
-          </div>
-          <img src="img/app-library.png" alt="Biblioteca de roteiros do Alvoprompt" class="block w-full" />
-        </div>
-        <div class="order-1 lg:order-2">
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">1 · Organize</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Sua biblioteca de roteiros</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            Crie, importe e gerencie quantos roteiros quiser — .txt, .md, .docx, PDF, áudio (transcrição
-            automática) e até links do YouTube e Google Docs. Tudo salvo localmente no seu dispositivo.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Importação multi-formato em um clique</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Duração estimada e velocidade por roteiro</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gere roteiros prontos com IA</li>
-          </ul>
-        </div>
+      <div class="reveal mt-12 flex flex-wrap justify-center gap-2 sm:gap-3" role="tablist" data-tabs>
+        <button class="tab-btn active rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600" data-tab="grave" role="tab" aria-selected="true">🎥 Gravar</button>
+        <button class="tab-btn rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600" data-tab="edite" role="tab" aria-selected="false">🎬 Editar</button>
+        <button class="tab-btn rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600" data-tab="ia" role="tab" aria-selected="false">✨ IA</button>
+        <button class="tab-btn rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600" data-tab="controle" role="tab" aria-selected="false">📡 Compartilhar</button>
       </div>
 
-      <div class="mt-16 grid items-center gap-8 lg:grid-cols-2">
-        <div>
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">2 · Escreva</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Editor com ferramentas de fala</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            Escreva ou cole seu texto e tenha tudo o que precisa ao alcance: duração por velocidade, modo
-            tempo-alvo, análise de vícios de linguagem, dublagem com IA e muito mais.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Análise de palavras-chave e fillers</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Dublagem IA para ouvir seu roteiro</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Calculadora de tempo por velocidade</li>
-          </ul>
-        </div>
-        <div class="frame">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Editor</span>
+      <div class="mt-10">
+        <!-- Gravar -->
+        <div class="tab-panel active grid items-center gap-8 lg:grid-cols-2" data-panel="grave">
+          <div class="frame">
+            <div class="frame-bar bg-white">
+              <span class="frame-dot bg-red-400"></span>
+              <span class="frame-dot bg-amber-400"></span>
+              <span class="frame-dot bg-emerald-400"></span>
+              <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Prompter</span>
+            </div>
+            <img src="img/app-prompter.png" alt="Prompter do Alvoprompt em tela cheia" class="block w-full" />
           </div>
-          <img src="img/app-editor.png" alt="Editor de roteiro do Alvoprompt" class="block w-full" />
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900">Prompter que se adapta a você</h3>
+            <p class="mt-3 leading-relaxed text-slate-500">
+              O texto rola enquanto você fala, para quando pausa e retoma sozinho. Ajuste fonte, cor, velocidade,
+              modo espelho, modo selfie, câmera e enquadramento em tempo real.
+            </p>
+            <ul class="mt-5 space-y-3 text-sm text-slate-600">
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> VoiceTrack com tolerância a paráfrase</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho (vidro de teleprompter)</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Câmera + texto na mesma tela, em 4K</li>
+            </ul>
+            <a href="#precos" class="js-app mt-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">Experimentar grátis
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
         </div>
-      </div>
 
-      <div class="mt-16 grid items-center gap-8 lg:grid-cols-2">
-        <div class="frame order-2 lg:order-1">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Prompter</span>
+        <!-- Editar -->
+        <div class="tab-panel grid items-center gap-8 lg:grid-cols-2" data-panel="edite">
+          <div class="order-2 lg:order-1">
+            <h3 class="text-2xl font-bold text-slate-900">Edite pelo texto, não pelo timeline</h3>
+            <p class="mt-3 leading-relaxed text-slate-500">
+              Corte por palavras da transcrição, remova silêncios automaticamente, redimensione para 9:16/1:1/16:9,
+              aplique green screen, Ken Burns e reframe que segue o rosto.
+            </p>
+            <ul class="mt-5 space-y-3 text-sm text-slate-600">
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Remoção de fillers e pausas em um toque</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Legendas automáticas + 70 idiomas</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Export 9:16/1:1/16:9 e SRT</li>
+            </ul>
+            <a href="#precos" class="js-app mt-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">Testar a edição
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
           </div>
-          <img src="img/app-ajustes.png" alt="Ajustes do prompter: rolagem, texto, câmera e enquadramento" class="block w-full" />
+          <div class="frame order-1 lg:order-2">
+            <div class="frame-bar bg-white">
+              <span class="frame-dot bg-red-400"></span>
+              <span class="frame-dot bg-amber-400"></span>
+              <span class="frame-dot bg-emerald-400"></span>
+              <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Editor</span>
+            </div>
+            <img src="img/app-editor.png" alt="Editor de roteiro do Alvoprompt" class="block w-full" />
+          </div>
         </div>
-        <div class="order-1 lg:order-2">
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">3 · Grave</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Prompter que se adapta a você</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            O texto rola enquanto você fala, para quando pausa e retoma sozinho. Ajuste fonte, cor, velocidade,
-            modo espelho, modo selfie, câmera e enquadramento em tempo real.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> VoiceTrack com tolerância a paráfrase</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho (vidro de teleprompter)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Câmera + texto na mesma tela, em 4K</li>
-          </ul>
-        </div>
-      </div>
 
-      <div class="mt-16 grid items-center gap-8 lg:grid-cols-2">
-        <div>
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">4 · Controle</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Control Room sem servidor</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            Controle o prompter de outro aparelho na mesma rede: play, pausa, posição e envio de roteiro —
-            pareado por código ou QR, via WebRTC, sem nenhum servidor no meio.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Pareamento por código ou QR</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Status em tempo real do prompter</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Open mic e mirror do texto</li>
-          </ul>
-        </div>
-        <div class="frame">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Control Room</span>
+        <!-- IA -->
+        <div class="tab-panel grid items-center gap-8 lg:grid-cols-2" data-panel="ia">
+          <div class="frame">
+            <div class="frame-bar bg-white">
+              <span class="frame-dot bg-red-400"></span>
+              <span class="frame-dot bg-amber-400"></span>
+              <span class="frame-dot bg-emerald-400"></span>
+              <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">✨ Painel de IA</span>
+            </div>
+            <img src="img/app-ia-panel.png" alt="Painel de IA do editor do Alvoprompt" class="block w-full" />
           </div>
-          <img src="img/app-controlroom.png" alt="Web Control Room do Alvoprompt" class="block w-full" />
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900">IA que trabalha com você, não por cima</h3>
+            <p class="mt-3 leading-relaxed text-slate-500">
+              Gere, melhore e suavize o roteiro; crie títulos, ganchos e hashtags; traduza para 70+ idiomas e
+              ouça o texto com dublagem — direto dentro do editor, com a sua própria chave da OpenAI ou Groq.
+            </p>
+            <ul class="mt-5 space-y-3 text-sm text-slate-600">
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Gerar, melhorar e suavizar o texto</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Análise de fillers e vícios de linguagem</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Avatar IA (AI Twin) e narração</li>
+            </ul>
+            <a href="#precos" class="js-app mt-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">Conhecer a IA
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Compartilhar / Control Room -->
+        <div class="tab-panel grid items-center gap-8 lg:grid-cols-2" data-panel="controle">
+          <div class="order-2 lg:order-1">
+            <h3 class="text-2xl font-bold text-slate-900">Control Room sem servidor</h3>
+            <p class="mt-3 leading-relaxed text-slate-500">
+              Controle o prompter de outro aparelho na mesma rede: play, pausa, posição e envio de roteiro —
+              pareado por código ou QR, via WebRTC, sem nenhum servidor no meio.
+            </p>
+            <ul class="mt-5 space-y-3 text-sm text-slate-600">
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Pareamento por código ou QR</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Status em tempo real do prompter</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Open mic e mirror do texto</li>
+            </ul>
+            <a href="#precos" class="js-app mt-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">Ver o control room
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+          <div class="frame order-1 lg:order-2">
+            <div class="frame-bar bg-white">
+              <span class="frame-dot bg-red-400"></span>
+              <span class="frame-dot bg-amber-400"></span>
+              <span class="frame-dot bg-emerald-400"></span>
+              <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Control Room</span>
+            </div>
+            <img src="img/app-controlroom.png" alt="Web Control Room do Alvoprompt" class="block w-full" />
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- IA NA PRATICA -->
-    <section id="ia" class="mx-auto max-w-6xl px-6 py-24">
+    <!-- RECURSOS: BENTO GRID -->
+    <section id="recursos" class="mx-auto max-w-6xl px-6 py-20">
       <div class="reveal mx-auto max-w-2xl text-center">
-        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Inteligência artificial</span>
+        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Recursos</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          IA que trabalha com você, não por cima
+          Um estúdio de vídeo <span class="grad-text">de bolso</span>
+        </h2>
+        <p class="mt-4 text-slate-500">Do roteiro à publicação: tudo em um lugar, funcionando até no modo avião.</p>
+      </div>
+
+      <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="bento card card-hover rounded-2xl p-6 sm:col-span-2">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">VoiceTrack</h3>
+          <p class="mt-1.5 text-sm text-slate-500">
+            O texto rola enquanto você fala, para quando pausa e retoma sozinho — com tolerância a paráfrase e
+            sensibilidade ajustável. O <span class="font-semibold text-slate-700">único</span> que acompanha você até quando você improvisa.
+          </p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 text-white shadow-lg shadow-cyan-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7Z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Câmera + texto</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Gravação nativa até 4K, mirinha de contato visual e open mic pós-script.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-fuchsia-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8L4 8.8h6.1L12 3Z"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">IA de roteiro</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Gere, melhore e crie títulos e ganchos. Remova fillers e vícios de linguagem.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Legendas + 70 idiomas</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Legenda automática, word highlight e tradução com export SRT.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15v-3m5 3V9m5 6v-5"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Editor de vídeo IA</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Corte por palavras, remoção de silêncios, green screen, Ken Burns e reframe.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Control Room</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Controle o prompter de outro aparelho via WebRTC com QR — sem servidor.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-lg shadow-indigo-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Dublagem e Avatar IA</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Narração IA para ouvir o roteiro e avatares (AI Twin) para a marca do vídeo.</p>
+        </div>
+        <div class="bento card card-hover rounded-2xl p-6 lg:col-span-2">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-lg shadow-slate-500/30">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Privacidade e offline</h3>
+          <p class="mt-1.5 text-sm text-slate-500">
+            Core 100% local: biblioteca no dispositivo, reconhecimento de fala on-device e nada vendido a terceiros.
+            Seus roteiros são seus — até no modo avião.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLUXO -->
+    <section id="como-funciona" class="border-y border-black/5 bg-white py-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="reveal mx-auto max-w-2xl text-center">
+          <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Fluxo</span>
+          <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Do roteiro ao vídeo pronto em <span class="grad-text">5 passos</span>
+          </h2>
+        </div>
+        <div class="reveal mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          <div class="card card-hover rounded-2xl p-5">
+            <span class="grad-text text-3xl font-extrabold">01</span>
+            <h3 class="mt-2 font-bold text-slate-900">Roteiro</h3>
+            <p class="mt-2 text-sm text-slate-500">Cole, escreva, importe .txt/.md/.docx/PDF, áudio, YouTube ou Google Docs — ou gere com IA.</p>
+          </div>
+          <div class="card card-hover rounded-2xl p-5">
+            <span class="grad-text text-3xl font-extrabold">02</span>
+            <h3 class="mt-2 font-bold text-slate-900">Prompter</h3>
+            <p class="mt-2 text-sm text-slate-500">Rolagem por voz (VoiceTrack), velocidade fixa ou manual. Modo espelho e modo selfie.</p>
+          </div>
+          <div class="card card-hover rounded-2xl p-5">
+            <span class="grad-text text-3xl font-extrabold">03</span>
+            <h3 class="mt-2 font-bold text-slate-900">Gravação</h3>
+            <p class="mt-2 text-sm text-slate-500">Câmera e texto na mesma tela, qualidade nativa, open mic pós-script e legendas ao vivo.</p>
+          </div>
+          <div class="card card-hover rounded-2xl p-5">
+            <span class="grad-text text-3xl font-extrabold">04</span>
+            <h3 class="mt-2 font-bold text-slate-900">Edição</h3>
+            <p class="mt-2 text-sm text-slate-500">Corte por palavras, remova silêncios, redimensione, legende, aplique marca e música.</p>
+          </div>
+          <div class="card card-hover rounded-2xl p-5">
+            <span class="grad-text text-3xl font-extrabold">05</span>
+            <h3 class="mt-2 font-bold text-slate-900">Publicação</h3>
+            <p class="mt-2 text-sm text-slate-500">Exporte 9:16/1:1/16:9, gere clipes e SRT — pronto para YouTube, TikTok e Reels.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARA QUEM É -->
+    <section id="para-quem" class="mx-auto max-w-6xl px-6 py-20">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Para quem é</span>
+        <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          Feito para quem fala olhando para a câmera
         </h2>
         <p class="mt-4 text-slate-500">
-          Melhore o texto, entenda a duração e grave com apoio de voz — direto dentro do editor, sem abrir outra aba.
+          Se você precisa falar com naturalidade em frente à câmera, o Alvoprompt foi desenhado para você.
         </p>
       </div>
-
-      <div class="reveal mt-14 grid items-center gap-8 lg:grid-cols-2">
-        <div class="frame">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">✨ IA de roteiro</span>
-          </div>
-          <img src="img/app-ia-panel.png" alt="Painel de IA do editor do Alvoprompt" class="block w-full" />
+      <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎙️</div>
+          <h3 class="mt-3 font-bold text-slate-900">Pregação e culto</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Esboço fluindo ao vivo com tolerância a paráfrase, para você pregar olhando para as pessoas.</p>
         </div>
-        <div>
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">1 · Melhore</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Roteiro melhor em segundos</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            O painel de IA reescreve trechos selecionados, suaviza o texto, gera títulos e ganchos com hashtags
-            e calcula a duração — com opção de usar a sua própria chave da OpenAI ou Groq.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gerar, melhorar e suavizar o texto</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Títulos, ganchos e hashtags prontos</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tradução para 70+ idiomas</li>
-          </ul>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600">📈</div>
+          <h3 class="mt-3 font-bold text-slate-900">Vendas e negócios</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Vídeos de resposta a lead, pitch e autoridade sem decorar roteiro — direto do seu fluxo comercial.</p>
         </div>
-      </div>
-
-      <div class="reveal mt-14 grid items-center gap-8 lg:grid-cols-2">
-        <div class="order-2 lg:order-1">
-          <span class="chip rounded-full px-3 py-1 text-xs font-semibold">2 · Entenda</span>
-          <h3 class="mt-2 text-2xl font-bold text-slate-900">Análise completa do roteiro</h3>
-          <p class="mt-3 leading-relaxed text-slate-500">
-            Veja duração estimada, contagem de palavras e o ritmo de leitura. O Alvoprompt ainda aponta fillers
-            ("né", "tipo", "ahã") e vícios de linguagem para você remover antes de gravar.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tempo estimado por velocidade</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Fillers e repetições destacadas</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sugestões de simplificação</li>
-          </ul>
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-fuchsia-100 text-fuchsia-600">🎬</div>
+          <h3 class="mt-3 font-bold text-slate-900">Criação de conteúdo</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Grava 9:16 nativo, corta por palavras, gera clipes e legendas — da ideia ao post em minutos.</p>
         </div>
-        <div class="frame order-1 lg:order-2">
-          <div class="frame-bar bg-white">
-            <span class="frame-dot bg-red-400"></span>
-            <span class="frame-dot bg-amber-400"></span>
-            <span class="frame-dot bg-emerald-400"></span>
-            <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">📊 Análise</span>
-          </div>
-          <img src="img/app-analise.png" alt="Painel de análise de roteiro do Alvoprompt" class="block w-full" />
+        <div class="bento card card-hover rounded-2xl p-6">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">🎓</div>
+          <h3 class="mt-3 font-bold text-slate-900">Cursos e aulas</h3>
+          <p class="mt-1.5 text-sm text-slate-500">Aulas com cadência natural, legendas em 70+ idiomas e SRT pronto para plataformas de curso.</p>
         </div>
       </div>
     </section>
 
-    <!-- 3 EM 1 -->
-    <section id="inspiracao" class="border-t border-black/5 bg-white py-24">
+    <!-- POSICIONAMENTO (3 EM 1) -->
+    <section id="inspiracao" class="border-y border-black/5 bg-white py-20">
       <div class="mx-auto max-w-6xl px-6">
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Posicionamento</span>
@@ -372,230 +696,139 @@
             </ul>
           </div>
         </div>
-        <div class="card mt-6 rounded-2xl p-8 text-center">
-          <p class="text-sm font-semibold uppercase tracking-widest text-indigo-500">Alvoprompt</p>
-          <p class="mx-auto mt-3 max-w-3xl text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl">
-            VoiceTrack <span class="grad-text">com tolerância a paráfrase</span> · câmera + gravação nativa ·
-            editor de vídeo com IA · preço transparente · <span class="text-slate-900">100% offline</span>
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- RECURSOS -->
-    <section id="recursos" class="mx-auto max-w-6xl px-6 py-24">
-      <div class="reveal mx-auto max-w-2xl text-center">
-        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Recursos</span>
-        <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Um estúdio de vídeo de bolso
-        </h2>
-        <p class="mt-4 text-slate-500">
-          Do roteiro à publicação: tudo em um lugar, funcionando até no modo avião.
-        </p>
-      </div>
-
-      <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎙️</div>
-          <h3 class="mt-2 font-bold text-slate-900">VoiceTrack</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            O texto rola enquanto você fala, para quando pausa e retoma sozinho — com tolerância a
-            paráfrase e sensibilidade ajustável.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎥</div>
-          <h3 class="mt-2 font-bold text-slate-900">Câmera + texto</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Grava em qualidade nativa (até 4K), com mirinha de contato visual e open mic para continuar
-            falando após o fim do roteiro.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">✨</div>
-          <h3 class="mt-2 font-bold text-slate-900">IA de roteiro</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Gere, melhore e crie títulos e ganchos com hashtags. Analise duração, palavras-chave e
-            remova fillers e vícios de linguagem.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">💬</div>
-          <h3 class="mt-2 font-bold text-slate-900">Legendas + 70 idiomas</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Legenda automática, temas profissionais, word highlight e tradução para 70+ idiomas com
-            export SRT.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎬</div>
-          <h3 class="mt-2 font-bold text-slate-900">Editor de vídeo IA</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Corte por palavras da transcrição, remoção de silêncios (RMS), 9:16/1:1/16:9, green screen,
-            Ken Burns, eye contact e reframe seguindo o rosto.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">📱</div>
-          <h3 class="mt-2 font-bold text-slate-900">Control Room</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Controle o prompter de outro aparelho na mesma rede: play/pause, envio de roteiro e espelho —
-            sem servidor, via WebRTC com QR.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🪄</div>
-          <h3 class="mt-2 font-bold text-slate-900">Dublagem e Avatar IA</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Ouça o roteiro com narração IA e gere avatares (AI Twin visual) para usar na marca do vídeo.
-          </p>
-        </div>
-        <div class="card rounded-2xl p-5">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🔒</div>
-          <h3 class="mt-2 font-bold text-slate-900">Privacidade e offline</h3>
-          <p class="mt-1.5 text-sm text-slate-500">
-            Core 100% local: biblioteca no dispositivo, reconhecimento de fala on-device e nada vendido
-            a terceiros.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- FLUXO -->
-    <section id="como-funciona" class="border-t border-black/5 bg-white py-24">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Fluxo</span>
-          <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Do roteiro ao vídeo pronto em 5 passos
-          </h2>
-        </div>
-        <div class="mt-14 grid gap-6 md:grid-cols-5">
-          <div class="card rounded-2xl p-5">
-            <span class="grad-text text-2xl font-extrabold">01</span>
-            <h3 class="mt-2 font-bold text-slate-900">Roteiro</h3>
-            <p class="mt-2 text-sm text-slate-500">Cole, escreva, importe .txt/.md/.docx/PDF, áudio, YouTube ou Google Docs — ou gere com IA.</p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <span class="grad-text text-2xl font-extrabold">02</span>
-            <h3 class="mt-2 font-bold text-slate-900">Prompter</h3>
-            <p class="mt-2 text-sm text-slate-500">Rolagem por voz (VoiceTrack), velocidade fixa ou manual. Modo espelho e modo selfie.</p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <span class="grad-text text-2xl font-extrabold">03</span>
-            <h3 class="mt-2 font-bold text-slate-900">Gravação</h3>
-            <p class="mt-2 text-sm text-slate-500">Câmera e texto na mesma tela, qualidade nativa, open mic pós-script e legendas ao vivo.</p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <span class="grad-text text-2xl font-extrabold">04</span>
-            <h3 class="mt-2 font-bold text-slate-900">Edição</h3>
-            <p class="mt-2 text-sm text-slate-500">Corte por palavras, remova silêncios, redimensione, legende, aplique marca e música.</p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <span class="grad-text text-2xl font-extrabold">05</span>
-            <h3 class="mt-2 font-bold text-slate-900">Publicação</h3>
-            <p class="mt-2 text-sm text-slate-500">Exporte 9:16/1:1/16:9, gere clipes e SRT — pronto para YouTube, TikTok e Reels.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PARA QUEM E -->
-    <section id="para-quem" class="border-t border-black/5 bg-white py-24">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Para quem é</span>
-          <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Feito para quem fala olhando para a câmera
-          </h2>
-          <p class="mt-4 text-slate-500">
-            Se você precisa falar com naturalidade em frente à câmera, o Alvoprompt foi desenhado para você.
-          </p>
-        </div>
-        <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div class="card rounded-2xl p-5">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🙏</div>
-            <h3 class="mt-2 font-bold text-slate-900">Pregação e culto</h3>
-            <p class="mt-1.5 text-sm text-slate-500">
-              Esboço fluindo ao vivo com tolerância a paráfrase, para você pregar olhando para as pessoas, não para o papel.
-            </p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">📈</div>
-            <h3 class="mt-2 font-bold text-slate-900">Vendas e negócios</h3>
-            <p class="mt-1.5 text-sm text-slate-500">
-              Vídeos de resposta a lead, pitch e conteúdo de autoridade sem decorar roteiro — direto do seu fluxo comercial.
-            </p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎬</div>
-            <h3 class="mt-2 font-bold text-slate-900">Criação de conteúdo</h3>
-            <p class="mt-1.5 text-sm text-slate-500">
-              Grava 9:16 nativo, corta por palavras, gera clipes e legendas — da ideia ao post em minutos, diariamente.
-            </p>
-          </div>
-          <div class="card rounded-2xl p-5">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🎓</div>
-            <h3 class="mt-2 font-bold text-slate-900">Cursos e aulas</h3>
-            <p class="mt-1.5 text-sm text-slate-500">
-              Aulas gravadas com cadência natural, legendas em 70+ idiomas e SRT pronto para plataformas de curso.
+        <div class="card relative mt-6 overflow-hidden rounded-2xl p-8 text-center">
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-violet-100 via-indigo-50 to-cyan-100 opacity-70" aria-hidden="true"></div>
+          <div class="relative">
+            <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Alvoprompt</p>
+            <p class="mx-auto mt-3 max-w-3xl text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl">
+              VoiceTrack <span class="grad-text">com tolerância a paráfrase</span> · câmera + gravação nativa ·
+              editor de vídeo com IA · preço transparente · <span class="text-slate-900">100% offline</span>
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- DEPOIMENTOS -->
-    <section id="depoimentos" class="mx-auto max-w-6xl px-6 py-24">
+    <!-- DEPOIMENTOS (CARROSSEL AUTO) -->
+    <section id="depoimentos" class="mx-auto max-w-6xl px-6 py-20">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Quem usa</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Quem testou, não volta para o papel
+          Quem testou, <span class="grad-text">não volta para o papel</span>
         </h2>
-        <p class="mt-4 text-slate-500">
-          Feedback de criadores, pregadores e vendedores na fase beta.
-        </p>
+        <p class="mt-4 text-slate-500">Feedback de criadores, pregadores e vendedores na fase beta.</p>
       </div>
-      <div class="reveal mt-12 grid gap-5 md:grid-cols-3">
-        <div class="card rounded-2xl p-6">
-          <div class="flex text-amber-400">★★★★★</div>
-          <p class="mt-3 text-sm leading-relaxed text-slate-600">
-            "Preguei o domingo inteiro olhando para a câmera. O VoiceTrack acompanha até quando eu improviso —
-            isso mudou tudo para mim."
-          </p>
-          <div class="mt-5 flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white">RM</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900">Rafael Martins</p>
-              <p class="text-xs text-slate-500">Pastor e criador de conteúdo</p>
+
+      <div class="reveal t-wrap mt-12 overflow-hidden" style="mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);">
+        <div class="t-track flex w-max gap-5">
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Preguei o domingo inteiro olhando para a câmera. O VoiceTrack acompanha até quando eu improviso —
+              isso mudou tudo para mim."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-xs font-bold text-white">RM</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Rafael Martins</p>
+                <p class="text-xs text-slate-500">Pastor e criador de conteúdo</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="card rounded-2xl p-6">
-          <div class="flex text-amber-400">★★★★★</div>
-          <p class="mt-3 text-sm leading-relaxed text-slate-600">
-            "Gravo resposta a lead todos os dias. Com o Alvoprompt o vídeo sai em 10 minutos, já cortado e com
-            legenda pronta."
-          </p>
-          <div class="mt-5 flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-600 text-xs font-bold text-white">CA</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900">Carla Antunes</p>
-              <p class="text-xs text-slate-500">Consultora e vendedora digital</p>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Gravo resposta a lead todos os dias. Com o Alvoprompt o vídeo sai em 10 minutos, já cortado e com
+              legenda pronta."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-600 to-sky-600 text-xs font-bold text-white">CA</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Carla Antunes</p>
+                <p class="text-xs text-slate-500">Consultora e vendedora digital</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="card rounded-2xl p-6">
-          <div class="flex text-amber-400">★★★★★</div>
-          <p class="mt-3 text-sm leading-relaxed text-slate-600">
-            "Uso o control room com um tablet para rodar o prompter enquanto gravo com o celular. Funciona sem
-            servidor nenhum."
-          </p>
-          <div class="mt-5 flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white">PS</div>
-            <div>
-              <p class="text-sm font-semibold text-slate-900">Pedro Salles</p>
-              <p class="text-xs text-slate-500">Criador de vídeos para YouTube</p>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Uso o control room com um tablet para rodar o prompter enquanto gravo com o celular. Funciona sem
+              servidor nenhum."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-xs font-bold text-white">PS</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Pedro Salles</p>
+                <p class="text-xs text-slate-500">Criador de vídeos para YouTube</p>
+              </div>
+            </div>
+          </div>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "As legendas saem em 70+ idiomas com um clique. Publiquei o mesmo vídeo em 5 idiomas na semana."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-xs font-bold text-white">LFM</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Luísa F. Moraes</p>
+                <p class="text-xs text-slate-500">Criadora de cursos online</p>
+              </div>
+            </div>
+          </div>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "O melhor: preço único. Paguei uma vez, sem assinatura, e o app é meu para sempre."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 to-violet-600 text-xs font-bold text-white">DM</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Diego Martins</p>
+                <p class="text-xs text-slate-500">Vendedor de alta performance</p>
+              </div>
+            </div>
+          </div>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Ministério, aula e post: um app só. O modo espelho com o vidro do teleprompter funcionou de primeira."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-orange-600 text-xs font-bold text-white">AR</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">André Ribeiro</p>
+                <p class="text-xs text-slate-500">Pastor e educador</p>
+              </div>
+            </div>
+          </div>
+          <!-- duplicado p/ loop perfeito -->
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6" aria-hidden="true">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Preguei o domingo inteiro olhando para a câmera. O VoiceTrack acompanha até quando eu improviso —
+              isso mudou tudo para mim."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-xs font-bold text-white">RM</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Rafael Martins</p>
+                <p class="text-xs text-slate-500">Pastor e criador de conteúdo</p>
+              </div>
+            </div>
+          </div>
+          <div class="card w-[340px] shrink-0 rounded-2xl p-6" aria-hidden="true">
+            <div class="flex text-amber-400">★★★★★</div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+              "Gravo resposta a lead todos os dias. Com o Alvoprompt o vídeo sai em 10 minutos, já cortado e com
+              legenda pronta."
+            </p>
+            <div class="mt-5 flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-600 to-sky-600 text-xs font-bold text-white">CA</div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Carla Antunes</p>
+                <p class="text-xs text-slate-500">Consultora e vendedora digital</p>
+              </div>
             </div>
           </div>
         </div>
@@ -603,112 +836,121 @@
     </section>
 
     <!-- COMPARATIVO -->
-    <section id="comparativo" class="mx-auto max-w-6xl px-6 py-24">
-      <div class="reveal mx-auto max-w-2xl text-center">
-        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Comparativo</span>
-        <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Por que o Alvoprompt?
-        </h2>
-      </div>
-      <div class="mt-12 overflow-x-auto rounded-2xl">
-        <table class="w-full min-w-[720px] border-separate border-spacing-0 text-sm">
-          <thead>
-            <tr class="text-left text-slate-500">
-              <th class="rounded-tl-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold">Capacidade</th>
-              <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">BIGVU</th>
-              <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">Teleprompter Pro</th>
-              <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">PromptSmart+</th>
-              <th class="rounded-tr-xl border border-indigo-300 bg-indigo-50 px-4 py-3 text-center font-bold text-indigo-700">Alvoprompt</th>
-            </tr>
-          </thead>
-          <tbody class="text-center text-slate-500">
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Teleprompter core</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅✅</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">VoiceTrack (rola com sua fala)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅ rígido</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ paráfrase</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Offline / on-device</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ core local</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: roteiro</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: legendas + tradução</td><td class="border border-slate-200 px-4 py-3">✅ 70+</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ 70+</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Câmera + texto na mesma tela</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Gravação HD no app</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">⚠️ reduzida</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ nativa</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Editor IA (corte, reframe, green screen)</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Modo espelho (hardware)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Web Control Room</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ sem servidor</td></tr>
-            <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Preço transparente</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ free + única</td></tr>
-          </tbody>
-        </table>
+    <section id="comparativo" class="border-y border-black/5 bg-white py-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="reveal mx-auto max-w-2xl text-center">
+          <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Comparativo</span>
+          <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Por que o <span class="grad-text">Alvoprompt</span>?
+          </h2>
+        </div>
+        <div class="reveal mt-12 overflow-x-auto rounded-2xl">
+          <table class="cmp w-full min-w-[760px] border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr class="text-left text-slate-500">
+                <th class="rounded-tl-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold">Capacidade</th>
+                <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">BIGVU</th>
+                <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">Teleprompter Pro</th>
+                <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">PromptSmart+</th>
+                <th class="col-alvo rounded-tr-xl border border-indigo-300 px-4 py-3 text-center font-bold text-indigo-700">Alvoprompt</th>
+              </tr>
+            </thead>
+            <tbody class="text-center text-slate-500">
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Teleprompter core</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅✅</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">VoiceTrack (rola com sua fala)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅ rígido</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ paráfrase</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Offline / on-device</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ core local</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: roteiro</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: legendas + tradução</td><td class="border border-slate-200 px-4 py-3">✅ 70+</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ 70+</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Câmera + texto na mesma tela</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Gravação HD no app</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">⚠️ reduzida</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ nativa</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Editor IA (corte, reframe, green screen)</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Modo espelho (hardware)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Web Control Room</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ sem servidor</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Preço transparente</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ free + única</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
     <!-- PREÇOS -->
-    <section id="precos" class="border-t border-black/5 bg-white py-24">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Preços</span>
-          <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Sem pegadinha, sem "teste grátis" forçado
-          </h2>
-          <p class="mt-4 text-slate-500">
-            Free para sempre, compra única para os que odeiam assinatura e Studio para quem quer IA completa.
-            Cancele em um toque, quando quiser.
-          </p>
+    <section id="precos" class="mx-auto max-w-6xl px-6 py-20">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Preços</span>
+        <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          Sem pegadinha, sem <span class="grad-text">"teste grátis" forçado</span>
+        </h2>
+        <p class="mt-4 text-slate-500">
+          Free para sempre, compra única para os que odeiam assinatura e Studio para quem quer IA completa.
+          Cancele em um toque, quando quiser.
+        </p>
+
+        <div class="mt-8 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm font-semibold">
+          <button id="billingMonthly" class="rounded-full px-4 py-1.5 transition-colors">Mensal</button>
+          <button id="billingAnnual" class="rounded-full px-4 py-1.5 text-slate-400 transition-colors">Anual</button>
+          <span class="chip rounded-full px-3 py-1 text-[11px] font-bold">2 meses grátis</span>
+        </div>
+      </div>
+
+      <div class="reveal mt-14 grid gap-6 md:grid-cols-3">
+        <div class="card card-hover rounded-2xl p-6">
+          <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Free</p>
+          <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 0</p>
+          <p class="mt-1 text-xs text-slate-400">para sempre, sem cartão</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-500">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter completo + VoiceTrack (offline)</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Textos ilimitados na biblioteca</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação HD até 10 min (1080p)</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho e modo selfie</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA para experimentar</li>
+          </ul>
+          <a href="#" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Começar grátis</a>
         </div>
 
-        <div class="reveal mt-14 grid gap-6 md:grid-cols-3">
-          <div class="card rounded-2xl p-6">
-            <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Free</p>
-            <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 0</p>
-            <p class="mt-1 text-xs text-slate-400">para sempre, sem cartão</p>
-            <ul class="mt-4 space-y-2 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter completo + VoiceTrack (offline)</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Textos ilimitados na biblioteca</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação HD até 10 min (1080p)</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho e modo selfie</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA para experimentar</li>
-            </ul>
-            <a href="#" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Começar grátis</a>
-          </div>
+        <div class="relative rounded-2xl border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white p-6 shadow-xl shadow-indigo-500/15">
+          <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold">MAIS POPULAR</span>
+          <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Pro</p>
+          <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 149</p>
+          <p class="mt-1 text-xs text-slate-400">compra única · pague uma vez e fica seu</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-500">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sem marca d'água</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação 4K e tempo ilimitado</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Import multi-formato (PDF, áudio, links)</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor básico de vídeo</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA todo mês</li>
+          </ul>
+          <a href="#" class="btn-primary mt-8 block rounded-xl py-3 text-center text-sm">Comprar agora</a>
+        </div>
 
-          <div class="relative rounded-2xl border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white p-6 shadow-xl shadow-indigo-500/10">
-            <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold">MAIS POPULAR</span>
-            <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Pro</p>
-            <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 149</p>
-            <p class="mt-1 text-xs text-slate-400">compra única · pague uma vez e fica seu</p>
-            <ul class="mt-4 space-y-2 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Sem marca d'água</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação 4K e tempo ilimitado</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Import multi-formato (PDF, áudio, links)</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor básico de vídeo</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA todo mês</li>
-            </ul>
-            <a href="#" class="btn-primary mt-8 block rounded-xl py-3 text-center text-sm">Comprar agora</a>
-          </div>
-
-          <div class="card rounded-2xl p-6">
-            <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Studio</p>
-            <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 29<span class="text-base font-medium text-slate-400">/mês</span></p>
-            <p class="mt-1 text-xs text-slate-400">ou R$ 249/ano (2 meses grátis)</p>
-            <ul class="mt-4 space-y-2 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do Pro</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor IA completo (eye contact, B-roll, dublagem)</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Legendas e tradução 70+ idiomas</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> Agendamento multi-canal e times</li>
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> 7 dias grátis · cancelamento em 1 toque</li>
-            </ul>
-            <a href="#" class="mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Testar 7 dias grátis</a>
-          </div>
+        <div class="card card-hover rounded-2xl p-6">
+          <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Studio</p>
+          <p class="mt-2 text-4xl font-extrabold text-slate-900">
+            <span data-price-studio>R$ 29</span><span class="text-base font-medium text-slate-400">/mês</span>
+          </p>
+          <p class="mt-1 text-xs text-slate-400" data-price-note>ou R$ 249/ano (2 meses grátis)</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-500">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do Pro</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor IA completo (eye contact, B-roll, dublagem)</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Legendas e tradução 70+ idiomas</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Agendamento multi-canal e times</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 7 dias grátis · cancelamento em 1 toque</li>
+          </ul>
+          <a href="#" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Testar 7 dias grátis</a>
         </div>
       </div>
     </section>
 
     <!-- FAQ -->
-    <section id="faq" class="mx-auto max-w-3xl px-6 py-24">
+    <section id="faq" class="mx-auto max-w-3xl px-6 py-20">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">FAQ</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Perguntas frequentes</h2>
       </div>
-      <div class="mt-10 space-y-3">
+      <div class="reveal mt-10 space-y-3">
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Preciso de internet para usar? <span class="text-indigo-500">+</span>
+            Preciso de internet para usar?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             Não. O core (prompter, VoiceTrack e gravação) funciona 100% offline, até no modo avião. Só os
@@ -717,7 +959,8 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Funciona no celular? <span class="text-indigo-500">+</span>
+            Funciona no celular?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             Sim. É uma PWA instalável (funciona no Chrome/Edge e no iOS via "Adicionar à Tela de Início") e
@@ -726,7 +969,8 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            E a minha privacidade? <span class="text-indigo-500">+</span>
+            E a minha privacidade?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             O reconhecimento de voz acontece no seu dispositivo e seus roteiros ficam na sua biblioteca local.
@@ -735,7 +979,8 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            O VoiceTrack entende português? <span class="text-indigo-500">+</span>
+            O VoiceTrack entende português?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             Sim, PT-BR nativo — e ao contrário do PromptSmart, ele tolera paráfrase: você pode reformular a
@@ -744,7 +989,8 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Que formatos consigo importar? <span class="text-indigo-500">+</span>
+            Que formatos consigo importar?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             .txt, .md, .docx, PDF, áudio (transcrição automática) e links — incluindo YouTube (legendas) e
@@ -753,7 +999,8 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Posso cancelar a qualquer momento? <span class="text-indigo-500">+</span>
+            Posso cancelar a qualquer momento?
+            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
             Sim, em um toque e direto no app. Sem ligação, sem formulário, sem pegadinha — o Pro nem é
@@ -764,26 +1011,32 @@
     </section>
 
     <!-- CTA FINAL -->
-    <section class="relative overflow-hidden bg-white py-24">
-      <div class="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[700px] -translate-x-1/2 rounded-full bg-indigo-200/40 blur-[100px]" aria-hidden="true"></div>
+    <section class="relative overflow-hidden bg-slate-950 py-24">
+      <div class="orb left-[-100px] top-[-80px] h-[340px] w-[340px] bg-violet-600/60" aria-hidden="true"></div>
+      <div class="orb right-[-80px] bottom-[-100px] h-[340px] w-[340px] bg-cyan-500/50" aria-hidden="true" style="animation-delay:-5s"></div>
+      <div class="pointer-events-none absolute inset-0 opacity-20" style="background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size: 44px 44px;" aria-hidden="true"></div>
       <div class="relative mx-auto max-w-3xl px-6 text-center">
-        <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+        <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
           Pronto para <span class="grad-text">olhar na câmera</span><br />e esquecer o texto?
         </h2>
-        <p class="mx-auto mt-5 max-w-xl text-lg text-slate-500">
+        <p class="mx-auto mt-5 max-w-xl text-lg text-slate-400">
           Comece grátis agora. Seus primeiros vídeos saem em menos de 5 minutos — sem cartão, sem burocracia.
         </p>
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a href="#" class="js-app btn-primary rounded-xl px-8 py-4 text-base">Criar minha conta grátis</a>
-          <a href="#" class="js-app rounded-xl border border-slate-300 bg-white px-8 py-4 text-base font-semibold text-slate-900 transition-colors hover:bg-slate-50">Instalar o app</a>
+          <a href="#" class="js-app rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/10">Instalar o app</a>
         </div>
-        <p class="mt-4 text-xs text-slate-400">PWA instalável · Android · iOS</p>
+        <div class="mt-7 flex items-center justify-center gap-6 text-xs text-slate-400">
+          <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> PWA instalável</span>
+          <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg> Android</span>
+          <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg> iOS</span>
+        </div>
       </div>
     </section>
 
     <!-- FOOTER -->
-    <footer class="border-t border-black/5 py-10">
-      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-slate-400 sm:flex-row">
+    <footer class="border-t border-white/10 bg-slate-950 py-12">
+      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 text-sm text-slate-400 sm:flex-row">
         <div class="flex items-center gap-2">
           <svg width="20" height="20" viewBox="0 0 48 48" fill="none" aria-hidden="true">
             <defs>
@@ -796,16 +1049,25 @@
               <path d="M24 16 17.2 34" /><path d="M24 16 30.8 34" />
             </g>
           </svg>
-          <span class="font-semibold text-slate-900">alvoprompt</span>
+          <span class="font-semibold text-white">alvoprompt</span>
         </div>
         <p>Seu texto no alvo, seus olhos na câmera.</p>
-        <div class="flex gap-5">
-          <a href="#" class="transition-colors hover:text-slate-900">Termos</a>
-          <a href="#" class="transition-colors hover:text-slate-900">Privacidade</a>
-          <a href="#" class="transition-colors hover:text-slate-900">Contato</a>
+        <div class="flex items-center gap-5">
+          <a href="https://github.com/Alexandrecostagg/alvoprompt" target="_blank" rel="noopener" class="transition-colors hover:text-white" aria-label="GitHub">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-1.97c-3.2.7-3.87-1.54-3.87-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.19-3.07-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.07 0 4.4-2.68 5.37-5.24 5.65.41.35.77 1.05.77 2.12v3.15c0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+          </a>
+          <a href="#" class="transition-colors hover:text-white">Termos</a>
+          <a href="https://alvoprompt-privacy.alexandrecostagg.workers.dev" target="_blank" rel="noopener" class="transition-colors hover:text-white">Privacidade</a>
+          <a href="mailto:alexandrecostagg@gmail.com" class="transition-colors hover:text-white">Contato</a>
         </div>
       </div>
     </footer>
+
+    <!-- BACK TO TOP -->
+    <button id="toTop" aria-label="Voltar ao topo" class="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/40 transition-transform hover:-translate-y-1">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+
     <script>
       const APP_URL = "https://some-civic-signature-partially.trycloudflare.com";
       document.querySelectorAll(".js-app").forEach((a) => {
@@ -813,18 +1075,143 @@
         a.target = "_blank";
         a.rel = "noopener";
       });
+
+      /* Reveal on scroll */
       const io = new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
-            if (e.isIntersecting) {
-              e.target.classList.add("in");
-              io.unobserve(e.target);
-            }
+            if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
           });
         },
         { threshold: 0.12 }
       );
       document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+      /* Scroll progress */
+      const progress = document.getElementById("progress");
+      const onScroll = () => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + "%";
+        document.getElementById("toTop").classList.toggle("show", window.scrollY > 600);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+      document.getElementById("toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+      /* Mobile menu */
+      const menuBtn = document.getElementById("menuBtn");
+      const mobileMenu = document.getElementById("mobileMenu");
+      menuBtn.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+      document.querySelectorAll(".mobile-link").forEach((l) =>
+        l.addEventListener("click", () => mobileMenu.classList.add("hidden"))
+      );
+
+      /* Active nav link */
+      const navLinks = document.querySelectorAll(".nav-link");
+      const navObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              navLinks.forEach((l) => l.classList.toggle("active", l.getAttribute("href") === "#" + e.target.id));
+            }
+          });
+        },
+        { rootMargin: "-45% 0px -50% 0px" }
+      );
+      ["app", "recursos", "comparativo", "precos", "faq"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) navObserver.observe(el);
+      });
+
+      /* Contadores */
+      const counterIO = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (!e.isIntersecting) return;
+            counterIO.unobserve(e.target);
+            const el = e.target;
+            const target = parseInt(el.dataset.target, 10);
+            const dur = 1200;
+            const start = performance.now();
+            const step = (now) => {
+              const p = Math.min((now - start) / dur, 1);
+              el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+              if (p < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+          });
+        },
+        { threshold: 0.6 }
+      );
+      document.querySelectorAll(".counter").forEach((el) => counterIO.observe(el));
+
+      /* Carrossel do hero */
+      const carousel = document.querySelector("[data-carousel]");
+      if (carousel) {
+        const track = carousel.querySelector("[data-carousel-track]");
+        const label = carousel.querySelector("[data-carousel-label]");
+        const dotsWrap = carousel.querySelector("[data-carousel-dots]");
+        const slides = Array.from(track.children);
+        const labels = ["alvoprompt — prompter", "alvoprompt — editor", "alvoprompt — painel de IA", "alvoprompt — análise", "alvoprompt — control room"];
+        let idx = 0;
+        let timer;
+
+        slides.forEach((_, i) => {
+          const d = document.createElement("button");
+          d.className = "carousel-dot" + (i === 0 ? " active" : "");
+          d.setAttribute("aria-label", "Ir para o slide " + (i + 1));
+          d.addEventListener("click", () => { go(i); restart(); });
+          dotsWrap.appendChild(d);
+        });
+        const dots = dotsWrap.children;
+
+        const go = (i) => {
+          idx = (i + slides.length) % slides.length;
+          track.style.transform = "translateX(-" + idx * 100 + "%)";
+          label.textContent = labels[idx];
+          Array.from(dots).forEach((d, j) => d.classList.toggle("active", j === idx));
+        };
+        const restart = () => { clearInterval(timer); timer = setInterval(() => go(idx + 1), 4200); };
+        carousel.querySelector("[data-carousel-prev]").addEventListener("click", () => { go(idx - 1); restart(); });
+        carousel.querySelector("[data-carousel-next]").addEventListener("click", () => { go(idx + 1); restart(); });
+        carousel.addEventListener("mouseenter", () => clearInterval(timer));
+        carousel.addEventListener("mouseleave", restart);
+        restart();
+      }
+
+      /* Abas do app */
+      const tabBtns = document.querySelectorAll("[data-tab]");
+      tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          tabBtns.forEach((b) => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
+          btn.classList.add("active");
+          btn.setAttribute("aria-selected", "true");
+          document.querySelectorAll("[data-panel]").forEach((p) => p.classList.remove("active"));
+          document.querySelector('[data-panel="' + btn.dataset.tab + '"]').classList.add("active");
+        });
+      });
+
+      /* Billing toggle */
+      const monthly = document.getElementById("billingMonthly");
+      const annual = document.getElementById("billingAnnual");
+      const priceStudio = document.querySelector("[data-price-studio]");
+      const priceNote = document.querySelector("[data-price-note]");
+      const setBilling = (annualMode) => {
+        monthly.classList.toggle("btn-primary", !annualMode);
+        annual.classList.toggle("btn-primary", annualMode);
+        monthly.classList.toggle("text-slate-400", annualMode);
+        annual.classList.toggle("text-slate-400", !annualMode);
+        if (annualMode) {
+          priceStudio.innerHTML = "R$ 249<span class='text-base font-medium text-slate-400'>/ano</span>";
+          priceNote.textContent = "equivalente a R$ 20,75/mês";
+        } else {
+          priceStudio.innerHTML = "R$ 29<span class='text-base font-medium text-slate-400'>/mês</span>";
+          priceNote.textContent = "ou R$ 249/ano (2 meses grátis)";
+        }
+      };
+      monthly.addEventListener("click", () => setBilling(false));
+      annual.addEventListener("click", () => setBilling(true));
+      setBilling(false);
     </script>
   </body>
 </html>
