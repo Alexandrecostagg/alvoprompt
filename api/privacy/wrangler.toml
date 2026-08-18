@@ -1,0 +1,8 @@
+name = "alvoprompt-privacy"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+account_id = "8f0d2ed7851f91dd1efbaa53af71323d"
+
+[vars]
+CONTACT_EMAIL = "alexandrecostagg@gmail.com"
+APP_NAME = "Alvoprompt"
