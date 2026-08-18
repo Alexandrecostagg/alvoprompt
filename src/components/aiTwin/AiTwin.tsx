@@ -1,0 +1,675 @@
+import { useEffect, useRef, useState } from 'react'
+import { useAppStore } from '../../store/useAppStore'
+import {
+  TalkingAvatar,
+  VoiceRecorder,
+  createAvatar,
+  createVoiceProfile,
+  dataUrlToBlob,
+  fileToAvatarDataUrl,
+  listAvatars,
+  listVoiceProfiles,
+  loadImage,
+  removeAvatar,
+  removeVoiceProfile,
+} from '../../lib/aiTwin'
+import { generateAvatar, speakWithTts } from '../../lib/cloudflare'
+import type { AvatarTwin, VoiceProfile, VoiceSample } from '../../lib/types'
+
+type Aspect = '9:16' | '1:1' | '16:9'
+
+const ASPECTS: Record<Aspect, { w: number; h: number }> = {
+  '9:16': { w: 720, h: 1280 },
+  '1:1': { w: 720, h: 720 },
+  '16:9': { w: 1280, h: 720 },
+}
+
+export default function AiTwin() {
+  const recording = useAppStore((s) => s.recording)
+  const [avatars, setAvatars] = useState<AvatarTwin[]>([])
+  const [voices, setVoices] = useState<VoiceProfile[]>([])
+  const [avatarId, setAvatarId] = useState<number | null>(null)
+  const [voiceId, setVoiceId] = useState<number | null>(null)
+  const [aspect, setAspect] = useState<Aspect>('9:16')
+  const [motion, setMotion] = useState<'breathing' | 'subtle' | 'none'>('breathing')
+  const [text, setText] = useState('')
+  const [source, setSource] = useState<'tts' | 'recording' | 'sample'>('tts')
+  const [sampleId, setSampleId] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [outUrl, setOutUrl] = useState<string | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [player, setPlayer] = useState<{ state: 'idle' | 'playing' | 'paused' | 'done'; at: number }>({ state: 'idle', at: 0 })
+
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const photoRef = useRef<HTMLInputElement>(null)
+  const [fluxPrompt, setFluxPrompt] = useState('')
+  const [recorder, setRecorder] = useState<VoiceRecorder | null>(null)
+  const [recSeconds, setRecSeconds] = useState(0)
+  const [pendingSamples, setPendingSamples] = useState<VoiceSample[]>([])
+  const [voiceName, setVoiceName] = useState('')
+
+  const avatar = avatars.find((a) => a.id === avatarId) ?? null
+  const voice = voices.find((v) => v.id === voiceId) ?? null
+  const talk = useRef<TalkingAvatar | null>(null)
+  const loadedBlobRef = useRef<Blob | null>(null)
+
+  const refresh = async () => {
+    setAvatars(await listAvatars())
+    setVoices(await listVoiceProfiles())
+  }
+
+  useEffect(() => {
+    void refresh()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      talk.current?.destroy()
+      talk.current = null
+    }
+  }, [])
+
+  const setupCanvas = (w: number, h: number) => {
+    if (!avatar) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    talk.current?.destroy()
+    void (async () => {
+      const img = await loadImage(avatar.imageDataUrl)
+      if (!canvasRef.current) return
+      talk.current = new TalkingAvatar(canvasRef.current, {
+        image: img,
+        width: w,
+        height: h,
+        zoom: 1.15,
+        focusY: 0.3,
+        motion,
+        onProgress: (cur, dur) => {
+          setProgress(dur ? cur / dur : 0)
+          setPlayer((p) => ({ ...p, at: cur }))
+        },
+        onEnded: () => setPlayer((p) => ({ ...p, state: 'done' })),
+      })
+    })()
+  }
+
+  useEffect(() => {
+    if (avatar) setupCanvas(ASPECTS[aspect].w, ASPECTS[aspect].h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avatar, aspect])
+
+  const savePhotoAvatar = async (file: File) => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file)
+      const name = file.name.replace(/\.[^.]+$/, '') || 'Meu rosto'
+      const id = await createAvatar(name, dataUrl, 'photo')
+      setAvatarId(id)
+      await refresh()
+      setMsg({ type: 'ok', text: 'Avatar criado a partir da foto!' })
+    } catch (err) {
+      setMsg({ type: 'err', text: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const generateFlux = async () => {
+    if (!fluxPrompt.trim()) {
+      setMsg({ type: 'err', text: 'Descreva o avatar que deseja gerar.' })
+      return
+    }
+    setBusy(true)
+    setMsg(null)
+    try {
+      const blob = await generateAvatar(fluxPrompt.trim())
+      const url = URL.createObjectURL(blob)
+      const canvas = document.createElement('canvas')
+      const img = await loadImage(url)
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      canvas.getContext('2d')!.drawImage(img, 0, 0)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+      const id = await createAvatar(`Avatar IA: ${fluxPrompt.slice(0, 20)}`, dataUrl, 'flux')
+      setAvatarId(id)
+      await refresh()
+      setMsg({ type: 'ok', text: 'Avatar gerado com IA!' })
+    } catch (err) {
+      setMsg({ type: 'err', text: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const startVoiceRec = async () => {
+    try {
+      const r = new VoiceRecorder()
+      r.onTick = (s) => setRecSeconds(s)
+      await r.start()
+      setRecorder(r)
+      setMsg(null)
+    } catch (err) {
+      setMsg({ type: 'err', text: (err as Error).message })
+    }
+  }
+
+  const stopVoiceRec = async () => {
+    if (!recorder) return
+    try {
+      const sample = await recorder.stop()
+      setPendingSamples((prev) => [...prev, sample])
+      setRecorder(null)
+      setRecSeconds(0)
+    } catch (err) {
+      setMsg({ type: 'err', text: (err as Error).message })
+      setRecorder(null)
+      setRecSeconds(0)
+    }
+  }
+
+  const saveVoice = async () => {
+    if (!pendingSamples.length) {
+      setMsg({ type: 'err', text: 'Grave pelo menos uma amostra de voz.' })
+      return
+    }
+    if (!voiceName.trim()) {
+      setMsg({ type: 'err', text: 'Dê um nome ao perfil de voz.' })
+      return
+    }
+    setBusy(true)
+    try {
+      const id = await createVoiceProfile(voiceName.trim(), pendingSamples, 'pt-BR')
+      setVoiceId(id)
+      setPendingSamples([])
+      setVoiceName('')
+      await refresh()
+      setMsg({ type: 'ok', text: 'Perfil de voz salvo!' })
+    } catch (err) {
+      setMsg({ type: 'err', text: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resolveAudio = async (): Promise<Blob | null> => {
+    if (source === 'tts') {
+      if (!text.trim()) {
+        setMsg({ type: 'err', text: 'Digite o texto que o avatar deve falar.' })
+        return null
+      }
+      setBusy(true)
+      setMsg(null)
+      try {
+        return await speakWithTts(text.trim(), 'pt-br')
+      } finally {
+        setBusy(false)
+      }
+    }
+    if (source === 'recording') {
+      if (!recording) {
+        setMsg({ type: 'err', text: 'Nenhuma gravação do prompter disponível. Grave um take primeiro.' })
+        return null
+      }
+      return recording.blob
+    }
+    const sample = voice?.samples.find((_, i) => i === sampleId)
+    if (!sample) {
+      setMsg({ type: 'err', text: 'Selecione uma amostra de voz.' })
+      return null
+    }
+    return dataUrlToBlob(sample.dataUrl)
+  }
+
+  const play = async () => {
+    const t = talk.current
+    if (!t) return
+    try {
+      const blob = await resolveAudio()
+      if (!blob) return
+      loadedBlobRef.current = blob
+      await t.loadAudio(blob)
+      setOutUrl(null)
+      setProgress(0)
+      await t.start()
+      setPlayer({ state: 'playing', at: 0 })
+    } catch (err) {
+      setBusy(false)
+      setMsg({ type: 'err', text: (err as Error).message })
+    }
+  }
+
+  const pause = () => {
+    talk.current?.pause()
+    setPlayer((p) => ({ ...p, state: 'paused' }))
+  }
+
+  const stopPlay = () => {
+    talk.current?.stop()
+    setPlayer({ state: 'idle', at: 0 })
+    setProgress(0)
+  }
+
+  const toggleRecording = async () => {
+    const t = talk.current
+    if (!t) return
+    if (isRecording) {
+      const blob = await t.stopRecording()
+      setIsRecording(false)
+      setPlayer({ state: 'idle', at: 0 })
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        setOutUrl(url)
+        setMsg({ type: 'ok', text: 'Vídeo do avatar gerado! Baixe abaixo.' })
+      }
+      return
+    }
+    try {
+      let blob = loadedBlobRef.current
+      if (!blob) {
+        blob = await resolveAudio()
+        if (!blob) return
+        loadedBlobRef.current = blob
+      }
+      t.stop()
+      await t.loadAudio(blob)
+      t.startRecording()
+      await t.start()
+      setIsRecording(true)
+      setPlayer({ state: 'playing', at: 0 })
+      setProgress(0)
+      setOutUrl(null)
+      setMsg({ type: 'ok', text: 'Gravando… toque em "⏹ Parar" para finalizar.' })
+    } catch (err) {
+      setIsRecording(false)
+      setMsg({ type: 'err', text: (err as Error).message })
+    }
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-white">AI Twin</h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+          Seu avatar falante: rosto (foto ou IA) + voz (amostras gravadas) → vídeo gerado localmente,
+          sem servidor.
+        </p>
+      </div>
+
+      {msg && (
+        <p className="mb-4 text-sm" style={{ color: msg.type === 'err' ? 'var(--danger)' : 'var(--ok)' }}>
+          {msg.text}
+        </p>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Coluna de configuração */}
+        <div className="space-y-4">
+          {/* Avatar */}
+          <section className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <h2 className="mb-3 text-sm font-semibold text-white">1. Rosto do avatar</h2>
+            <div className="flex flex-wrap gap-2">
+              {avatars.map((a) => (
+                <button
+                  key={a.id ?? a.key}
+                  onClick={() => setAvatarId(a.id ?? null)}
+                  className="group relative overflow-hidden rounded-xl border"
+                  style={{
+                    borderColor: a.id === avatarId ? 'var(--accent)' : 'var(--border)',
+                  }}
+                  title={a.name}
+                >
+                  <img src={a.imageDataUrl} alt={a.name} className="h-16 w-16 object-cover" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+                    <span className="text-[10px] opacity-0 group-hover:opacity-100">✕</span>
+                  </span>
+                </button>
+              ))}
+              <div className="flex flex-col items-center justify-center gap-1">
+                <input
+                  ref={photoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) void savePhotoAvatar(f)
+                  }}
+                />
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  disabled={busy}
+                  className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                >
+                  📷 Foto
+                </button>
+              </div>
+            </div>
+            {avatar && (
+              <div className="mt-2 flex items-center justify-between">
+                <span className="truncate text-xs" style={{ color: 'var(--muted)' }}>
+                  {avatar.name} · {avatar.source === 'flux' ? 'IA' : 'foto'}
+                </span>
+                <button
+                  onClick={async () => {
+                    if (avatar.id != null) await removeAvatar(avatar.id)
+                    await refresh()
+                  }}
+                  className="text-xs"
+                  style={{ color: 'var(--danger)' }}
+                >
+                  apagar
+                </button>
+              </div>
+            )}
+            <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <label className="mb-1 block text-xs" style={{ color: 'var(--muted)' }}>
+                Gerar rosto com IA (Flux)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  value={fluxPrompt}
+                  onChange={(e) => setFluxPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void generateFlux()
+                  }}
+                  placeholder="Ex.: homem de 30 anos, terno, fundo de estúdio"
+                  className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-xs outline-none"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                />
+                <button
+                  onClick={() => void generateFlux()}
+                  disabled={busy}
+                  className="rounded-lg border px-3 py-2 text-xs disabled:opacity-40"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                >
+                  ✨ Gerar
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Voz */}
+          <section className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <h2 className="mb-3 text-sm font-semibold text-white">2. Voz do avatar</h2>
+            <div className="flex flex-wrap gap-2">
+              {voices.map((v) => (
+                <button
+                  key={v.id ?? v.key}
+                  onClick={() => setVoiceId(v.id ?? null)}
+                  className="rounded-lg border px-3 py-1.5 text-xs"
+                  style={{
+                    borderColor: v.id === voiceId ? 'var(--accent)' : 'var(--border)',
+                    color: v.id === voiceId ? 'var(--accent)' : 'var(--muted)',
+                  }}
+                >
+                  🎙️ {v.name}
+                </button>
+              ))}
+            </div>
+            {voice && (
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                  {voice.samples.length} amostra(s) · {voice.lang}
+                </span>
+                <button
+                  onClick={async () => {
+                    if (voice.id != null) await removeVoiceProfile(voice.id)
+                    await refresh()
+                  }}
+                  className="text-xs"
+                  style={{ color: 'var(--danger)' }}
+                >
+                  apagar
+                </button>
+              </div>
+            )}
+
+            <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Grave 3–5 amostras da sua voz para criar o clone de voz:
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {!recorder ? (
+                  <button
+                    onClick={() => void startVoiceRec()}
+                    className="rounded-lg border px-3 py-1.5 text-xs"
+                    style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                  >
+                    🔴 Gravar amostra
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => void stopVoiceRec()}
+                    className="rounded-lg border px-3 py-1.5 text-xs"
+                    style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}
+                  >
+                    ⏹ Parar ({recSeconds.toFixed(1)}s)
+                  </button>
+                )}
+                {recorder && (
+                  <button
+                    onClick={() => {
+                      recorder.cancel()
+                      setRecorder(null)
+                      setRecSeconds(0)
+                    }}
+                    className="rounded-lg border px-3 py-1.5 text-xs"
+                    style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+              {pendingSamples.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <audio controls src={pendingSamples[pendingSamples.length - 1]!.dataUrl} className="h-8 w-40" />
+                  <span className="text-xs" style={{ color: 'var(--ok)' }}>
+                    {pendingSamples.length} amostra(s) pronta(s)
+                  </span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  value={voiceName}
+                  onChange={(e) => setVoiceName(e.target.value)}
+                  placeholder="Nome do perfil de voz"
+                  className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-xs outline-none"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                />
+                <button
+                  onClick={() => void saveVoice()}
+                  disabled={busy || !pendingSamples.length}
+                  className="rounded-lg px-3 py-2 text-xs font-semibold text-black disabled:opacity-40"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  Salvar voz
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Fala */}
+          <section className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <h2 className="mb-3 text-sm font-semibold text-white">3. O que o avatar fala</h2>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {(
+                [
+                  ['tts', 'Texto → voz IA'],
+                  ['recording', 'Gravação do prompter'],
+                  ['sample', 'Amostra da minha voz'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setSource(id)}
+                  className="rounded-lg border px-3 py-1.5 text-xs"
+                  style={{
+                    borderColor: source === id ? 'var(--accent)' : 'var(--border)',
+                    color: source === id ? 'var(--accent)' : 'var(--muted)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {source === 'tts' && (
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={4}
+                placeholder="Texto que o avatar deve falar (TTS via Cloudflare)"
+                className="w-full resize-y rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+              />
+            )}
+            {source === 'recording' && (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {recording
+                  ? '✓ Há uma gravação do prompter pronta. O avatar vai falar com a sua voz real.'
+                  : 'Nenhuma gravação disponível. Grave um take no prompter para usar como áudio do avatar.'}
+              </p>
+            )}
+            {source === 'sample' && voice && (
+              <div className="flex flex-wrap gap-2">
+                {voice.samples.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSampleId(i)}
+                    className="rounded-lg border px-3 py-1.5 text-xs"
+                    style={{
+                      borderColor: sampleId === i ? 'var(--accent)' : 'var(--border)',
+                      color: sampleId === i ? 'var(--accent)' : 'var(--muted)',
+                    }}
+                  >
+                    Amostra {i + 1} ({s.duration.toFixed(1)}s)
+                  </button>
+                ))}
+              </div>
+            )}
+            {source === 'sample' && !voice && (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Crie um perfil de voz primeiro (seção 2).
+              </p>
+            )}
+          </section>
+        </div>
+
+        {/* Coluna de preview */}
+        <div className="space-y-4">
+          <section className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-white">4. Avatar falante</h2>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.keys(ASPECTS) as Aspect[]).map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => setAspect(a)}
+                    className="rounded border px-2 py-1 text-[11px]"
+                    style={{
+                      background: aspect === a ? 'var(--bg)' : 'transparent',
+                      color: aspect === a ? 'var(--accent)' : 'var(--muted)',
+                      borderColor: aspect === a ? 'var(--accent)' : 'var(--border)',
+                    }}
+                  >
+                    {a}
+                  </button>
+                ))}
+                <select
+                  value={motion}
+                  onChange={(e) => setMotion(e.target.value as typeof motion)}
+                  className="rounded border bg-transparent px-2 py-1 text-[11px] outline-none"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                >
+                  <option value="breathing">respiração</option>
+                  <option value="subtle">sutil</option>
+                  <option value="none">parado</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-center rounded-lg" style={{ background: '#000' }}>
+              <canvas
+                ref={canvasRef}
+                className="max-h-[520px] w-auto rounded-lg"
+                style={{ maxWidth: '100%', aspectRatio: `${ASPECTS[aspect].w}/${ASPECTS[aspect].h}` }}
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {!isRecording &&
+                (player.state === 'playing' ? (
+                  <button
+                    onClick={pause}
+                    className="rounded-lg border px-4 py-2 text-sm"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                  >
+                    ⏸ Pausar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => void play()}
+                    disabled={busy || !avatar}
+                    className="rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+                    style={{ background: 'var(--accent)' }}
+                  >
+                    {busy ? 'Carregando…' : '▶ Falar'}
+                  </button>
+                ))}
+              <button
+                onClick={() => void toggleRecording()}
+                disabled={!avatar || !talk.current?.duration || busy}
+                className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
+                style={{
+                  borderColor: isRecording ? 'var(--ok)' : 'var(--danger)',
+                  color: isRecording ? 'var(--ok)' : 'var(--danger)',
+                  background: isRecording ? 'var(--ok)1a' : 'transparent',
+                }}
+              >
+                {isRecording ? '⏹ Parar' : '⏺ Gerar vídeo'}
+              </button>
+              {!isRecording && (player.state === 'playing' || player.state === 'paused' || player.state === 'done') && (
+                <button
+                  onClick={stopPlay}
+                  className="rounded-lg border px-4 py-2 text-sm"
+                  style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+                >
+                  ■ Parar
+                </button>
+              )}
+              <div className="ml-auto h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--bg)', maxWidth: 160 }}>
+                <div className="h-full rounded-full transition-all" style={{ background: 'var(--accent)', width: `${Math.round(progress * 100)}%` }} />
+              </div>
+            </div>
+
+            {outUrl && (
+              <div className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--ok)' }}>
+                <p className="mb-2 text-xs" style={{ color: 'var(--ok)' }}>
+                  ✓ Vídeo gerado
+                </p>
+                <video src={outUrl} controls className="max-h-64 w-full rounded-lg" />
+                <a
+                  href={outUrl}
+                  download={`alvoprompt-twin-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                  className="mt-2 inline-block rounded-lg px-4 py-2 text-sm font-semibold text-black"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  ⬇️ Baixar vídeo
+                </a>
+              </div>
+            )}
+
+            {!avatar && (
+              <p className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>
+                Adicione um rosto (seção 1) para começar.
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}

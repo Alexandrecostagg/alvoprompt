@@ -9,7 +9,89 @@ export interface Script {
   tags?: string[]
 }
 
-export type View = 'library' | 'editor' | 'prompter' | 'video-editor' | 'control'
+export type View =
+  | 'library'
+  | 'editor'
+  | 'prompter'
+  | 'video-editor'
+  | 'control'
+  | 'scheduling'
+  | 'workspaces'
+  | 'ai-twin'
+
+export type SocialChannel = 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'x' | 'whatsapp'
+
+export type PostStatus = 'scheduled' | 'published' | 'cancelled' | 'failed'
+
+export interface ScheduledPost {
+  id?: number
+  /** Identificador estável entre dispositivos (UUID). Usado pelo sync em nuvem. */
+  key?: string
+  title: string
+  description: string
+  channels: SocialChannel[]
+  scheduledAt: number
+  status: PostStatus
+  mediaName?: string
+  mediaType?: string
+  mediaDataUrl?: string
+  scriptTitle?: string
+  tags?: string[]
+  createdAt: number
+  updatedAt: number
+}
+
+export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer'
+
+export interface WorkspaceMember {
+  name: string
+  email?: string
+  role: TeamRole
+}
+
+export interface BrandKit {
+  name: string
+  logoDataUrl?: string
+  primaryColor: string
+  accentColor: string
+  fontFamily?: string
+}
+
+export interface Workspace {
+  id?: number
+  /** Identificador estável entre dispositivos (UUID). Usado pelo sync em nuvem. */
+  key?: string
+  name: string
+  /** Papel do dispositivo atual dentro do workspace. */
+  myRole: TeamRole
+  members: WorkspaceMember[]
+  brandKit?: BrandKit
+  createdAt: number
+  updatedAt: number
+}
+
+export interface AvatarTwin {
+  id?: number
+  key?: string
+  name: string
+  imageDataUrl: string
+  source: 'photo' | 'flux'
+  createdAt: number
+}
+
+export interface VoiceSample {
+  dataUrl: string
+  duration: number
+}
+
+export interface VoiceProfile {
+  id?: number
+  key?: string
+  name: string
+  samples: VoiceSample[]
+  lang: string
+  createdAt: number
+}
 
 export type AiPanelTab = 'generate' | 'improve' | 'titles'
 

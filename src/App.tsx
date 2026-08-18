@@ -6,6 +6,9 @@ import PrompterView from './components/prompter/PrompterView'
 import VideoEditor from './components/editor/VideoEditor'
 import ControlRoom from './components/control/ControlRoom'
 import SyncControl from './components/SyncControl'
+import SchedulingHub from './components/scheduling/SchedulingHub'
+import WorkspacesPanel from './components/workspace/WorkspacesPanel'
+import AiTwin from './components/aiTwin/AiTwin'
 
 function Logo() {
   return (
@@ -53,6 +56,7 @@ export default function App() {
 
   useEffect(() => {
     void useAppStore.getState().loadScripts()
+    void useAppStore.getState().refreshWorkspaces()
   }, [])
 
   if (view === 'prompter') {
@@ -120,6 +124,39 @@ export default function App() {
             🎮 Control Room
           </button>
           <button
+            onClick={() => setView('scheduling')}
+            className="rounded-lg px-3 py-1.5 transition-colors"
+            style={{
+              color: view === 'scheduling' ? 'var(--accent)' : 'var(--muted)',
+              background: view === 'scheduling' ? 'var(--panel)' : 'transparent',
+              border: `1px solid ${view === 'scheduling' ? 'var(--border)' : 'transparent'}`,
+            }}
+          >
+            📅 Agendar
+          </button>
+          <button
+            onClick={() => setView('workspaces')}
+            className="rounded-lg px-3 py-1.5 transition-colors"
+            style={{
+              color: view === 'workspaces' ? 'var(--accent)' : 'var(--muted)',
+              background: view === 'workspaces' ? 'var(--panel)' : 'transparent',
+              border: `1px solid ${view === 'workspaces' ? 'var(--border)' : 'transparent'}`,
+            }}
+          >
+            👥 Equipe
+          </button>
+          <button
+            onClick={() => setView('ai-twin')}
+            className="rounded-lg px-3 py-1.5 transition-colors"
+            style={{
+              color: view === 'ai-twin' ? 'var(--accent)' : 'var(--muted)',
+              background: view === 'ai-twin' ? 'var(--panel)' : 'transparent',
+              border: `1px solid ${view === 'ai-twin' ? 'var(--border)' : 'transparent'}`,
+            }}
+          >
+            🤖 AI Twin
+          </button>
+          <button
             onClick={toggleTheme}
             className="ml-1 rounded-lg border px-2.5 py-1.5 transition-colors"
             style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
@@ -132,7 +169,11 @@ export default function App() {
         </div>
       </header>
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {view === 'library' ? <ScriptLibrary /> : <ScriptEditor />}
+        {view === 'library' ? <ScriptLibrary /> : null}
+        {view === 'editor' ? <ScriptEditor /> : null}
+        {view === 'scheduling' ? <SchedulingHub /> : null}
+        {view === 'workspaces' ? <WorkspacesPanel /> : null}
+        {view === 'ai-twin' ? <AiTwin /> : null}
       </main>
     </div>
   )

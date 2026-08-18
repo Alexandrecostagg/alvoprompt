@@ -24,8 +24,8 @@ export function clearSyncPass(): void {
   localStorage.removeItem(PASS_KEY)
 }
 
-async function syncFetch(init: RequestInit, pass: string): Promise<unknown> {
-  const res = await fetch(`${apiBase()}/sync`, {
+async function syncFetch(init: RequestInit, pass: string, path = '/sync'): Promise<unknown> {
+  const res = await fetch(`${apiBase()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -63,4 +63,72 @@ export async function pushToCloud(pass: string, scripts: Script[]): Promise<numb
     pass,
   )) as { ok: boolean; count: number }
   return payload.count
+}
+
+// ---- Sync genérico de coleções (agendamentos, workspaces) ----
+
+export interface SerializablePost {
+  key: string
+  title: string
+  description: string
+  channels: string[]
+  scheduledAt: number
+  status: string
+  mediaName?: string
+  mediaType?: string
+  scriptTitle?: string
+  tags?: string[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface SerializableWorkspace {
+  key: string
+  name: string
+  myRole: string
+  members: { name: string; email?: string; role: string }[]
+  brandKit?: {
+    name: string
+    logoDataUrl?: string
+    primaryColor: string
+    accentColor: string
+    fontFamily?: string
+  }
+  createdAt: number
+  updatedAt: number
+}
+
+async function pullCollection<T>(pass: string, path: string, field: string): Promise<T[]> {
+  const payload = (await syncFetch({ method: 'GET' }, pass, path)) as Record<string, T[]>
+  return Array.isArray(payload[field]) ? payload[field] : []
+}
+
+async function pushCollection<T>(
+  pass: string,
+  path: string,
+  field: string,
+  items: T[],
+): Promise<number> {
+  const payload = (await syncFetch(
+    { method: 'PUT', body: JSON.stringify({ [field]: items }) },
+    pass,
+    path,
+  )) as { ok: boolean; count: number }
+  return payload.count
+}
+
+export function pullPostsCloud(pass: string): Promise<SerializablePost[]> {
+  return pullCollection<SerializablePost>(pass, '/schedules', 'posts')
+}
+
+export function pushPostsCloud(pass: string, posts: SerializablePost[]): Promise<number> {
+  return pushCollection(pass, '/schedules', 'posts', posts)
+}
+
+export function pullWorkspacesCloud(pass: string): Promise<SerializableWorkspace[]> {
+  return pullCollection<SerializableWorkspace>(pass, '/workspaces', 'workspaces')
+}
+
+export function pushWorkspacesCloud(pass: string, workspaces: SerializableWorkspace[]): Promise<number> {
+  return pushCollection(pass, '/workspaces', 'workspaces', workspaces)
 }

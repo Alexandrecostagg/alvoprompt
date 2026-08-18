@@ -86,6 +86,9 @@ src/
 │   ├── control/QrCode.tsx        # QR do código de pareamento (qrcode.react)
 │   ├── control/QrScanner.tsx     # leitor de QR pela câmera (jsQR, code-split)
 │   ├── SyncControl.tsx           # sync em nuvem por frase-chave (☁️ no header)
+│   ├── scheduling/SchedulingHub.tsx # agendamento multi-canal (YouTube, IG, TikTok, LinkedIn, X, WhatsApp)
+│   ├── workspace/WorkspacesPanel.tsx # workspaces de equipe + brand kit
+│   ├── aiTwin/AiTwin.tsx         # AI Twin: rosto (foto/Flux) + voz + avatar falante
 │   └── prompter/
 │       ├── PrompterView.tsx      # prompter full-screen (texto + câmera + gravação + legendas)
 │       ├── SettingsPanel.tsx     # ajustes de rolagem, texto, câmera e enquadramento
@@ -108,7 +111,10 @@ src/
 │   ├── faceTrack.ts              # reframe com tracking de rosto (Shape Detection API → crop dinâmico)
 │   ├── clipPrompt.ts             # comandos em linguagem natural p/ cortar/formatar ("de 1:30 a 2:15", "remove silêncio")
 │   ├── sync.ts                   # merge/upload/download de roteiros (KV via Worker)
-│   ├── syncWorker.ts             # cliente do endpoint /sync (frase-chave)
+│   ├── syncWorker.ts             # cliente dos endpoints /sync, /schedules e /workspaces (frase-chave)
+│   ├── scheduling.ts             # agendamentos: canais, caption por canal, sync por frase-chave
+│   ├── workspace.ts              # workspaces: membros/papéis, brand kit, sync por frase-chave
+│   ├── aiTwin.ts                 # avatar falante local (canvas+audio) + gravação de amostras de voz
 │   ├── cloudflare.ts             # cliente do Worker (Whisper/TTS/tradução)
 │   ├── text.ts                   # tokens, normalização, similaridade, fillers, stats
 │   └── types.ts                  # tipos e settings padrão
@@ -135,7 +141,8 @@ o mais recente vence) e envia alterações automaticamente. Dados ficam no **Clo
 - **KV `ALVOPROMPT_SYNC`** criado (binding no Worker; sync de roteiros por frase-chave)
 - Endpoints: `POST /transcribe` (Whisper), `POST /tts` (MeloTTS → fallback Aura), `POST /translate` (m2m100),
   `POST /import-url` (YouTube/Google Docs/URL genérica), `POST /avatar` (geração de imagem Flux),
-  `PUT/GET/DELETE /media/:key` (R2), `GET/PUT /sync` (KV, header `x-sync-pass`)
+  `PUT/GET/DELETE /media/:key` (R2), `GET/PUT /sync` (roteiros), `GET/PUT /schedules` (agendamentos),
+  `GET/PUT /workspaces` (workspaces) — os três últimos usam KV com header `x-sync-pass`
 - Código em `api/transcribe`; cliente em `src/lib/cloudflare.ts`
 
 > **Nota sobre YouTube**: o YouTube bloqueia IPs de datacenter, então a transcrição via
@@ -168,6 +175,6 @@ npm run ios       # build + sync + abre o Xcode
 - [x] **Fase 2** — gerador de roteiros IA, melhorar roteiro, títulos & ganchos **+ hashtags**, análise de roteiro (palavras-chave + duração), remoção de fillers/vícios de linguagem, guia de enquadramento 9:16/1:1/16:9, legendas automáticas com export SRT (Web Speech API), tradução de legendas para 70+ idiomas (DeepSeek), **editor de vídeo** (redimensionamento 9:16/1:1/16:9, corte por palavras da transcrição, temas de legenda queimadas no vídeo — canvas + MediaRecorder), import .docx/PDF/link
   - [x] import **áudio (transcrição Whisper)** e **link YouTube/Google Docs** (via Worker Cloudflare)
 - [x] **Fase 3** — **Web Control Room** (controlar o prompter de outro aparelho na mesma rede: pareamento sem servidor via WebRTC/DataChannel por código **ou QR escaneado pela câmera**, enviar roteiro, play/pause, seek, espelhar, open mic, status em tempo real), **mírula de contato visual** (dot no centro da câmera), **brand kit no editor** (logo sobreposta + trilha sonora com mix de áudio no vídeo exportado), **green screen (chroma key)** com troca de cor de fundo e suavização, **movimento de câmera (Ken Burns)** no editor de vídeo (zoom-in/zoom-out/pan esquerda-direita por trecho), **B-rolls automáticos** (corte de pausas/silêncios usando o timing das palavras da transcrição **ou análise do áudio por RMS** — funciona até sem transcrição, com limiar de pausa, margem e sensibilidade ajustáveis — tudo offline no editor), **modo tempo-alvo** (terminar o roteiro em X minutos), **atalhos por gamepad/foot pedal**, **fábrica de clipes 9:16** (1 vídeo → N shorts com legendas queimadas e word highlight), **reframe automático seguindo o rosto** (Shape Detection API) **+ eye contact fix** (olhos no terço superior, offline) e **comandos em linguagem natural** ("pega a parte de 1:30 a 2:15", "corte os primeiros 20s", "remove o silêncio"), **intro/outro de marca** (cards com gradiente no início/fim do vídeo), **dublagem IA** (TTS MeloTTS no editor), **fontes p/ dislexia + RTL**, **calculadora de tempo/fala**
-  - [ ] agendamento multi-canal, workspaces de equipe (exigem backend)
+  - [x] **agendamento multi-canal** (mesmo vídeo/legenda para YouTube, Instagram, TikTok, LinkedIn, X e WhatsApp, com legenda pronta por canal, link WhatsApp e sync por frase-chave) e **workspaces de equipe** (membros com papéis, brand kit com logo/cores, sync por frase-chave)
 - [x] **Fase 4** — **PWA instalável**, **API** (Worker consumido pelo app: transcrição, TTS, import de URL, avatar), **geração de avatares** (AI Twin parte visual, Flux), **empacotamento nativo (Capacitor)** iOS e Android
-  - [ ] AI Twin completo (clone de rosto+voz para avatar falante)
+  - [x] **AI Twin completo** (clone de rosto+voz para avatar falante): rosto por foto ou geração Flux, clone de voz por amostras gravadas, e **avatar falante 100% local** (animação de respiração + "boca" sincronizada com a amplitude do áudio via canvas + MediaRecorder, com export de vídeo)

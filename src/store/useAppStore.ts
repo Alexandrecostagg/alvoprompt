@@ -6,8 +6,10 @@ import {
   type PrompterSettings,
   type Script,
   type View,
+  type Workspace,
 } from '../lib/types'
 import { getScripts, saveScript, deleteScript } from '../lib/db'
+import { listWorkspaces } from '../lib/workspace'
 import type { CaptionUtterance } from '../lib/srt'
 
 export interface RecordingData {
@@ -31,6 +33,8 @@ interface AppState {
   aiPanelTab: AiPanelTab | null
   recording: RecordingData | null
   prompterState: PrompterStatus | null
+  workspaces: Workspace[]
+  activeWorkspaceId: number | null
   loadScripts: () => Promise<void>
   setView: (view: View) => void
   selectScript: (script: Script | null) => void
@@ -42,6 +46,9 @@ interface AppState {
   closeAiPanel: () => void
   setRecording: (recording: RecordingData | null) => void
   setPrompterState: (state: PrompterStatus | null) => void
+  loadWorkspaces: () => Promise<void>
+  refreshWorkspaces: () => Promise<void>
+  setActiveWorkspace: (id: number | null) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -53,6 +60,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   aiPanelTab: null,
   recording: null,
   prompterState: null,
+  workspaces: [],
+  activeWorkspaceId: (() => {
+    const saved = localStorage.getItem('alvoprompt-active-workspace')
+    return saved ? Number(saved) : null
+  })(),
 
   loadScripts: async () => {
     set({ loading: true })
@@ -92,4 +104,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRecording: (recording) => set({ recording }),
 
   setPrompterState: (prompterState) => set({ prompterState }),
+
+  loadWorkspaces: async () => {
+    const workspaces = await listWorkspaces()
+    set({ workspaces })
+  },
+
+  refreshWorkspaces: async () => {
+    const workspaces = await listWorkspaces()
+    const activeWorkspaceId = get().activeWorkspaceId
+    const stillExists = workspaces.some((w) => w.id === activeWorkspaceId)
+    set({
+      workspaces,
+      activeWorkspaceId: stillExists ? activeWorkspaceId : workspaces[0]?.id ?? null,
+    })
+    if (!stillExists) localStorage.removeItem('alvoprompt-active-workspace')
+  },
+
+  setActiveWorkspace: (id) => {
+    if (id == null) localStorage.removeItem('alvoprompt-active-workspace')
+    else localStorage.setItem('alvoprompt-active-workspace', String(id))
+    set({ activeWorkspaceId: id })
+  },
 }))

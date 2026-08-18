@@ -1,19 +1,34 @@
 import Dexie, { type Table } from 'dexie'
-import type { Script } from './types'
+import type { AvatarTwin, ScheduledPost, Script, VoiceProfile, Workspace } from './types'
 
-export function newScriptKey(): string {
+export function newKey(prefix: string): string {
   return typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
-    : `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    : `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+export function newScriptKey(): string {
+  return newKey('s')
 }
 
 class AlvopromptDB extends Dexie {
   scripts!: Table<Script, number>
+  posts!: Table<ScheduledPost, number>
+  workspaces!: Table<Workspace, number>
+  avatars!: Table<AvatarTwin, number>
+  voiceProfiles!: Table<VoiceProfile, number>
 
   constructor() {
     super('alvoprompt')
     this.version(1).stores({
       scripts: '++id, title, updatedAt',
+    })
+    this.version(2).stores({
+      scripts: '++id, title, updatedAt',
+      posts: '++id, scheduledAt, status, updatedAt',
+      workspaces: '++id, name, updatedAt',
+      avatars: '++id, createdAt',
+      voiceProfiles: '++id, createdAt',
     })
   }
 }
@@ -36,4 +51,82 @@ export async function saveScript(script: Script): Promise<number> {
 
 export async function deleteScript(id: number): Promise<void> {
   await db.scripts.delete(id)
+}
+
+// ---- Agendamentos multi-canal ----
+export async function getPosts(): Promise<ScheduledPost[]> {
+  return db.posts.orderBy('scheduledAt').toArray()
+}
+
+export async function savePost(post: ScheduledPost): Promise<number> {
+  const now = Date.now()
+  const next: ScheduledPost = { ...post, key: post.key ?? newKey('p'), updatedAt: now }
+  if (next.id != null) {
+    await db.posts.put(next)
+    return next.id
+  }
+  return db.posts.add(next)
+}
+
+export async function deletePost(id: number): Promise<void> {
+  await db.posts.delete(id)
+}
+
+// ---- Workspaces de equipe ----
+export async function getWorkspaces(): Promise<Workspace[]> {
+  return db.workspaces.orderBy('updatedAt').reverse().toArray()
+}
+
+export async function saveWorkspace(workspace: Workspace): Promise<number> {
+  const now = Date.now()
+  const next: Workspace = {
+    ...workspace,
+    key: workspace.key ?? newKey('w'),
+    updatedAt: now,
+  }
+  if (next.id != null) {
+    await db.workspaces.put(next)
+    return next.id
+  }
+  return db.workspaces.add(next)
+}
+
+export async function deleteWorkspace(id: number): Promise<void> {
+  await db.workspaces.delete(id)
+}
+
+// ---- AI Twin: avatares ----
+export async function getAvatars(): Promise<AvatarTwin[]> {
+  return db.avatars.orderBy('createdAt').reverse().toArray()
+}
+
+export async function saveAvatar(avatar: AvatarTwin): Promise<number> {
+  const next: AvatarTwin = { ...avatar, key: avatar.key ?? newKey('a') }
+  if (next.id != null) {
+    await db.avatars.put(next)
+    return next.id
+  }
+  return db.avatars.add(next)
+}
+
+export async function deleteAvatar(id: number): Promise<void> {
+  await db.avatars.delete(id)
+}
+
+// ---- AI Twin: perfis de voz ----
+export async function getVoiceProfiles(): Promise<VoiceProfile[]> {
+  return db.voiceProfiles.orderBy('createdAt').reverse().toArray()
+}
+
+export async function saveVoiceProfile(profile: VoiceProfile): Promise<number> {
+  const next: VoiceProfile = { ...profile, key: profile.key ?? newKey('v') }
+  if (next.id != null) {
+    await db.voiceProfiles.put(next)
+    return next.id
+  }
+  return db.voiceProfiles.add(next)
+}
+
+export async function deleteVoiceProfile(id: number): Promise<void> {
+  await db.voiceProfiles.delete(id)
 }

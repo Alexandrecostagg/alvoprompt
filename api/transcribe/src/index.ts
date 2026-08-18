@@ -9,6 +9,8 @@
  *   POST /avatar      JSON: { prompt }                                → imagem PNG (Flux)
  *   PUT/GET/DELETE /media/:key (R2)
  *   GET/PUT /sync     Header "x-sync-pass"; PUT body { scripts }      → sync de roteiros (KV)
+ *   GET/PUT /schedules   Header "x-sync-pass"; body { posts }         → sync de agendamentos (KV)
+ *   GET/PUT /workspaces  Header "x-sync-pass"; body { workspaces }    → sync de workspaces (KV)
  *
  * Uso local:  npx wrangler dev --port 8787
  * Publicar:   npx wrangler deploy
@@ -49,12 +51,114 @@ function toArrayBuffer(arr: number[]): ArrayBuffer {
   return out.buffer
 }
 
-async function syncKey(pass: string): Promise<string> {
+async function syncKey(pass: string, prefix = 'sync'): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass))
   const hex = Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
-  return `sync:${hex}`
+  return `${prefix}:${hex}`
+}
+
+/**
+ * Sync genérico de coleções no KV, protegido pela frase-chave (x-sync-pass).
+ * GET  → { [field]: [...] }
+ * PUT  → { [field]: [...] } (sanitizado antes de salvar)
+ * prefixo diferente por tipo (sync/schedules/workspaces) para não misturar dados.
+ */
+async function handleCollection(
+  request: Request,
+  kv: KVNamespace,
+  prefix: string,
+  field: string,
+  sanitize: (rec: Record<string, unknown>) => Record<string, unknown>,
+): Promise<Response> {
+  const pass = (request.headers.get('x-sync-pass') ?? '').trim()
+  if (pass.length < 4) {
+    return json({ error: 'Frase-chave muito curta (mínimo 4 caracteres).' }, 400)
+  }
+  const key = await syncKey(pass, prefix)
+
+  if (request.method === 'GET') {
+    const raw = await kv.get(key)
+    if (!raw) return json({ [field]: [] })
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      return json({ [field]: Array.isArray(parsed[field]) ? parsed[field] : [] })
+    } catch {
+      return json({ [field]: [] })
+    }
+  }
+
+  if (request.method === 'PUT') {
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const items = body?.[field]
+    if (!Array.isArray(items)) {
+      return json({ error: `Corpo deve ser { ${field}: [...] }.` }, 400)
+    }
+    const sanitized = items.map((s) => sanitize((s ?? {}) as Record<string, unknown>))
+    await kv.put(key, JSON.stringify({ [field]: sanitized }), {
+      expirationTtl: 60 * 60 * 24 * 90,
+    })
+    return json({ ok: true, count: sanitized.length })
+  }
+
+  return json({ error: 'Método não permitido.' }, 405)
+}
+
+function sanitizePost(rec: Record<string, unknown>): Record<string, unknown> {
+  return {
+    key: typeof rec.key === 'string' && rec.key ? rec.key : crypto.randomUUID(),
+    title: typeof rec.title === 'string' ? rec.title : '',
+    description: typeof rec.description === 'string' ? rec.description : '',
+    channels: Array.isArray(rec.channels) ? rec.channels.filter((c) => typeof c === 'string') : [],
+    scheduledAt: typeof rec.scheduledAt === 'number' ? rec.scheduledAt : Date.now(),
+    status:
+      typeof rec.status === 'string' && ['scheduled', 'published', 'cancelled', 'failed'].includes(rec.status)
+        ? rec.status
+        : 'scheduled',
+    mediaName: typeof rec.mediaName === 'string' ? rec.mediaName : '',
+    mediaType: typeof rec.mediaType === 'string' ? rec.mediaType : '',
+    scriptTitle: typeof rec.scriptTitle === 'string' ? rec.scriptTitle : '',
+    tags: Array.isArray(rec.tags) ? rec.tags.filter((t) => typeof t === 'string') : [],
+    createdAt: typeof rec.createdAt === 'number' ? rec.createdAt : Date.now(),
+    updatedAt: typeof rec.updatedAt === 'number' ? rec.updatedAt : Date.now(),
+  }
+}
+
+function sanitizeWorkspace(rec: Record<string, unknown>): Record<string, unknown> {
+  const members = Array.isArray(rec.members)
+    ? (rec.members as Record<string, unknown>[]).map((m) => ({
+        name: typeof m.name === 'string' ? m.name : 'Membro',
+        email: typeof m.email === 'string' ? m.email : '',
+        role:
+          typeof m.role === 'string' && ['owner', 'admin', 'editor', 'viewer'].includes(m.role)
+            ? m.role
+            : 'viewer',
+      }))
+    : []
+  const bk = (rec.brandKit ?? {}) as Record<string, unknown>
+  const brandKit =
+    typeof bk.name === 'string' && bk.name
+      ? {
+          name: bk.name,
+          logoDataUrl: typeof bk.logoDataUrl === 'string' ? bk.logoDataUrl : '',
+          primaryColor: typeof bk.primaryColor === 'string' ? bk.primaryColor : '#8B5CF6',
+          accentColor: typeof bk.accentColor === 'string' ? bk.accentColor : '#22D3EE',
+          fontFamily: typeof bk.fontFamily === 'string' ? bk.fontFamily : '',
+        }
+      : undefined
+  return {
+    key: typeof rec.key === 'string' && rec.key ? rec.key : crypto.randomUUID(),
+    name: typeof rec.name === 'string' ? rec.name : 'Workspace',
+    myRole:
+      typeof rec.myRole === 'string' && ['owner', 'admin', 'editor', 'viewer'].includes(rec.myRole)
+        ? rec.myRole
+        : 'viewer',
+    members,
+    brandKit,
+    createdAt: typeof rec.createdAt === 'number' ? rec.createdAt : Date.now(),
+    updatedAt: typeof rec.updatedAt === 'number' ? rec.updatedAt : Date.now(),
+  }
 }
 
 function youtubeVideoId(target: string): string | null {
@@ -387,6 +491,20 @@ export default {
       }
 
       return json({ error: 'Método não permitido em /sync.' }, 405)
+    }
+
+    // ---- Sync de agendamentos e workspaces (KV, mesma frase-chave) ----
+    if (url.pathname === '/schedules') {
+      return handleCollection(request, env.ALVOPROMPT_SYNC, 'schedules', 'posts', sanitizePost)
+    }
+    if (url.pathname === '/workspaces') {
+      return handleCollection(
+        request,
+        env.ALVOPROMPT_SYNC,
+        'workspaces',
+        'workspaces',
+        sanitizeWorkspace,
+      )
     }
 
     // ---- Armazenamento de mídia no R2 ----
