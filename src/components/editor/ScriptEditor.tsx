@@ -17,6 +17,7 @@ export default function ScriptEditor() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [dirty, setDirty] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [showTiming, setShowTiming] = useState(false)
   const [ttsBusy, setTtsBusy] = useState(false)
   const [ttsPlaying, setTtsPlaying] = useState(false)
 
@@ -96,25 +97,24 @@ export default function ScriptEditor() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => setView('library')}
-          className="rounded-lg border px-3 py-1.5 text-sm"
-          style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
-        >
-          ← Biblioteca
-        </button>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 border-b px-4 pb-3 backdrop-blur-xl sm:static sm:mx-0 sm:rounded-2xl sm:border sm:p-3" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--bg) 92%, transparent)' }}>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setView('library')} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-lg" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Voltar para a biblioteca">←</button>
+          <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">Editar roteiro</p><p className="text-[11px]" style={{ color: dirty ? 'var(--warn)' : 'var(--muted)' }}>{dirty ? 'Alterações não salvas' : 'Tudo salvo neste dispositivo'}</p></div>
+          <button onClick={() => void handleSave()} disabled={!dirty} className="min-h-11 rounded-2xl border px-3 text-xs font-bold disabled:opacity-50" style={{ borderColor: dirty ? 'var(--warn)' : 'var(--border)', color: dirty ? 'var(--warn)' : 'var(--muted)' }}>{dirty ? 'Salvar' : 'Salvo'}</button>
+          <button onClick={() => setView('prompter')} disabled={words === 0} className="min-h-11 rounded-2xl px-4 text-sm font-bold text-white disabled:opacity-40" style={{ background: 'var(--brand-gradient)' }}>Prompter</button>
+        </div>
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 sm:justify-end">
           <button
             onClick={() => fileRef.current?.click()}
-            className="rounded-lg border px-3 py-1.5 text-sm"
+            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
-            Importar
+            ▤ Importar
           </button>
           <button
             onClick={() => openAiPanel(aiPanelTab ?? 'generate')}
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold"
+            className="min-h-10 shrink-0 rounded-xl px-3 text-sm font-semibold"
             style={{
               background: 'var(--accent-2)',
               color: '#0e0a1a',
@@ -125,7 +125,7 @@ export default function ScriptEditor() {
           <button
             onClick={() => void toggleDubbing()}
             disabled={ttsBusy || words === 0}
-            className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
+            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm disabled:opacity-40"
             style={{
               borderColor: ttsPlaying ? 'var(--accent)' : 'var(--border)',
               color: ttsPlaying ? 'var(--accent)' : 'var(--text)',
@@ -136,7 +136,7 @@ export default function ScriptEditor() {
           </button>
           <button
             onClick={() => setShowAnalysis((v) => !v)}
-            className="rounded-lg border px-3 py-1.5 text-sm"
+            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm"
             style={{
               borderColor: showAnalysis ? 'var(--accent)' : 'var(--border)',
               color: showAnalysis ? 'var(--accent)' : 'var(--text)',
@@ -145,24 +145,7 @@ export default function ScriptEditor() {
           >
             📊 Analisar
           </button>
-          <button
-            onClick={handleSave}
-            className="rounded-lg border px-3 py-1.5 text-sm font-medium"
-            style={{
-              borderColor: dirty ? 'var(--warn)' : 'var(--border)',
-              color: dirty ? 'var(--warn)' : 'var(--muted)',
-            }}
-          >
-            {dirty ? 'Salvar (Cmd+S)' : 'Salvo'}
-          </button>
-          <button
-            onClick={() => setView('prompter')}
-            disabled={words === 0}
-            className="rounded-lg px-4 py-1.5 text-sm font-semibold text-black disabled:opacity-40"
-            style={{ background: 'var(--accent)' }}
-          >
-            Abrir no Prompter →
-          </button>
+          <button onClick={() => setShowTiming((value) => !value)} className="min-h-10 shrink-0 rounded-xl border px-3 text-sm" style={{ borderColor: showTiming ? 'var(--accent)' : 'var(--border)', color: showTiming ? 'var(--accent)' : 'var(--text)' }}>◷ Ritmo</button>
         </div>
         <input
           ref={fileRef}
@@ -190,7 +173,7 @@ export default function ScriptEditor() {
           setDirty(true)
         }}
         placeholder="Título do roteiro"
-        className="mb-3 w-full rounded-lg border bg-transparent px-4 py-2.5 text-lg font-medium text-white outline-none focus:ring-2"
+        className="mb-3 min-h-[3.25rem] w-full rounded-2xl border bg-transparent px-4 py-3 text-lg font-semibold text-white outline-none focus:ring-2"
         style={{ borderColor: 'var(--border)' }}
       />
 
@@ -207,18 +190,18 @@ export default function ScriptEditor() {
           }
         }}
         placeholder="Cole ou digite aqui o texto que você vai ler..."
-        className="min-h-[50vh] w-full flex-1 resize-none rounded-lg border p-4 text-base leading-relaxed text-white outline-none focus:ring-2"
+        className="min-h-[55dvh] w-full flex-1 resize-none rounded-2xl border p-4 text-base leading-relaxed text-white outline-none focus:ring-2 sm:min-h-[50vh]"
         style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
       />
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs" style={{ color: 'var(--muted)' }}>
+      <div className="mt-3 flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between" style={{ color: 'var(--muted)' }}>
         <span>
           {words} palavras · duração estimada ~{formatElapsed(minutes * 60)} a {settings.wpm} wpm
         </span>
-        <span>Dica: organize o roteiro em parágrafos curtos. O VoiceTrack segue sua fala.</span>
+        <span>Dica: use parágrafos curtos para a rolagem por voz acompanhar melhor.</span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+      <div className={`${showTiming ? 'flex' : 'hidden'} mt-3 flex-wrap items-center gap-4 rounded-2xl border px-4 py-3 sm:flex`} style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
         <div>
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
             Duração por velocidade

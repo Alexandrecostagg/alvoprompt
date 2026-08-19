@@ -7,13 +7,13 @@
     <title>AlvoPrompter — Seu roteiro no alvo. Seu olhar na câmera.</title>
     <meta
       name="description"
-      content="Teleprompter PT-BR com VoiceTrack, câmera, gravação, legendas e edição. Seu roteiro no alvo. Seu olhar na câmera."
+      content="Teleprompter PT-BR com rolagem por voz, câmera, gravação, legendas e edição. Seu roteiro no alvo. Seu olhar na câmera."
     />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&amp;display=swap"
       rel="stylesheet"
     />
     <style>
@@ -204,6 +204,10 @@
         100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
       }
       .pulse { animation: pulseDot 2s infinite; }
+
+      /* Ritmo vertical compacto e consistente entre as seções da LP */
+      .section-space { padding-block: clamp(2.25rem, 3.2vw, 2.75rem); }
+      .section-space-cta { padding-block: clamp(3rem, 4vw, 3.5rem); }
     </style>
   </head>
   <body class="antialiased">
@@ -259,10 +263,9 @@
           Seu olhar na <span class="grad-text">câmera</span>.
         </h1>
         <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500">
-          Um estúdio de bolso inspirado nos melhores fluxos do <span class="font-semibold text-slate-900">BIGVU</span>,
-          <span class="font-semibold text-slate-900">Teleprompter Pro</span> e
-          <span class="font-semibold text-slate-900">PromptSmart</span>. O <span class="grad-text font-bold">VoiceTrack</span>
-          acompanha sua fala, enquanto câmera, gravação e roteiro permanecem juntos na mesma tela.
+          Um estúdio de bolso feito para quem grava em português. A
+          <span class="grad-text font-bold">rolagem por voz</span> acompanha sua fala, enquanto câmera,
+          gravação e roteiro permanecem juntos na mesma tela.
         </p>
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a href="/" class="js-app btn-primary rounded-xl px-7 py-3.5 text-base">Começar grátis</a>
@@ -274,7 +277,7 @@
             <svg class="transition-transform group-hover:translate-y-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </a>
         </div>
-        <p class="mt-4 text-xs text-slate-400">Plano grátis sem cartão · dados locais por padrão · planos pagos via Asaas</p>
+        <p class="mt-4 text-xs text-slate-400">Plano grátis sem cartão · dados locais por padrão · planos mensais sem fidelidade</p>
 
         <!-- Carrossel principal -->
         <div class="mx-auto mt-14 max-w-4xl" data-carousel>
@@ -338,7 +341,7 @@
     </section>
 
     <!-- TRUST BAR / CONTADORES -->
-    <section class="mx-auto max-w-6xl px-6 py-16">
+    <section class="section-space mx-auto max-w-6xl px-6">
       <div class="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
         <div class="reveal">
           <span class="block text-4xl font-extrabold text-slate-900">Local</span>
@@ -360,7 +363,7 @@
     </section>
 
     <!-- O APP EM ABAS -->
-    <section id="app" class="mx-auto max-w-6xl px-6 py-20">
+    <section id="app" class="section-space mx-auto max-w-6xl px-6">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">O app</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -397,7 +400,7 @@
               modo espelho, modo selfie, câmera e enquadramento em tempo real.
             </p>
             <ul class="mt-5 space-y-3 text-sm text-slate-600">
-              <li class="flex gap-2"><span class="tick font-bold">✓</span> VoiceTrack com tolerância a paráfrase</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Rolagem por voz com tolerância a pequenas variações</li>
               <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho (vidro de teleprompter)</li>
               <li class="flex gap-2"><span class="tick font-bold">✓</span> Câmera + texto na mesma tela, em 4K</li>
             </ul>
@@ -494,7 +497,7 @@
     </section>
 
     <!-- RECURSOS: BENTO GRID -->
-    <section id="recursos" class="mx-auto max-w-6xl px-6 py-20">
+    <section id="recursos" class="section-space mx-auto max-w-6xl px-6">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Recursos</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -508,7 +511,7 @@
           <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/30">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
           </div>
-          <h3 class="mt-4 text-lg font-bold text-slate-900">VoiceTrack</h3>
+          <h3 class="mt-4 text-lg font-bold text-slate-900">Rolagem por voz</h3>
           <p class="mt-1.5 text-sm text-slate-500">
             O texto rola enquanto você fala, para quando pausa e retoma sozinho — com tolerância a paráfrase e
             sensibilidade ajustável para acompanhar pequenas variações durante a leitura.
@@ -562,7 +565,7 @@
           </div>
           <h3 class="mt-4 text-lg font-bold text-slate-900">Privacidade e offline</h3>
           <p class="mt-1.5 text-sm text-slate-500">
-            Biblioteca e gravações ficam no dispositivo por padrão. VoiceTrack e recursos de IA podem depender
+            Biblioteca e gravações ficam no dispositivo por padrão. A rolagem por voz e os recursos de IA podem depender
             do navegador ou da nuvem; cada envio é descrito antes do uso.
           </p>
         </div>
@@ -570,7 +573,7 @@
     </section>
 
     <!-- FLUXO -->
-    <section id="como-funciona" class="border-y border-black/5 bg-white py-20">
+    <section id="como-funciona" class="section-space border-y border-black/5 bg-white">
       <div class="mx-auto max-w-6xl px-6">
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Fluxo</span>
@@ -587,7 +590,7 @@
           <div class="card card-hover rounded-2xl p-5">
             <span class="grad-text text-3xl font-extrabold">02</span>
             <h3 class="mt-2 font-bold text-slate-900">Prompter</h3>
-            <p class="mt-2 text-sm text-slate-500">Rolagem por voz (VoiceTrack), velocidade fixa ou manual. Modo espelho e modo selfie.</p>
+            <p class="mt-2 text-sm text-slate-500">Rolagem por voz, velocidade fixa ou manual. Modo espelho e modo selfie.</p>
           </div>
           <div class="card card-hover rounded-2xl p-5">
             <span class="grad-text text-3xl font-extrabold">03</span>
@@ -609,7 +612,7 @@
     </section>
 
     <!-- PARA QUEM É -->
-    <section id="para-quem" class="mx-auto max-w-6xl px-6 py-20">
+    <section id="para-quem" class="section-space mx-auto max-w-6xl px-6">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Para quem é</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -643,44 +646,44 @@
       </div>
     </section>
 
-    <!-- POSICIONAMENTO (3 EM 1) -->
-    <section id="inspiracao" class="border-y border-black/5 bg-white py-20">
+    <!-- POSICIONAMENTO: REFERÊNCIAS DE CATEGORIA -->
+    <section id="inspiracao" class="section-space border-y border-black/5 bg-white">
       <div class="mx-auto max-w-6xl px-6">
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Posicionamento</span>
           <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Três referências, uma experiência própria
+            Cada referência é forte em uma parte do fluxo
           </h2>
           <p class="mt-4 text-slate-500">
-            Estudamos os fluxos que funcionam em cada referência e desenhamos uma experiência própria para PT-BR.
+            Reconhecemos o que cada solução faz bem e construímos uma experiência própria para quem produz em português.
           </p>
         </div>
         <div class="reveal mt-12 grid gap-5 md:grid-cols-3">
           <div class="card rounded-2xl p-5">
-            <p class="text-xs font-semibold uppercase tracking-widest text-red-500">BIGVU</p>
-            <h3 class="mt-1.5 text-lg font-bold text-slate-900">Ecossistema completo, cobrança agressiva</h3>
+            <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">BIGVU</p>
+            <h3 class="mt-1.5 text-lg font-bold text-slate-900">Produção de vídeo em um só fluxo</h3>
             <ul class="mt-3 space-y-1.5 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="cross">✕</span> Faturamento confuso, "teste grátis" não honrado</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Vídeo corta quando o texto termina</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Qualidade de imagem ruim no overlay</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Roteiro, gravação e edição</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Legendas e recursos de IA</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Publicação e trabalho em equipe</li>
             </ul>
           </div>
           <div class="card rounded-2xl p-5">
-            <p class="text-xs font-semibold uppercase tracking-widest text-red-500">Teleprompter Pro</p>
-            <h3 class="mt-1.5 text-lg font-bold text-slate-900">Core honesto, sem IA e sem câmera</h3>
+            <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">Teleprompter Pro</p>
+            <h3 class="mt-1.5 text-lg font-bold text-slate-900">Simplicidade para leitura profissional</h3>
             <ul class="mt-3 space-y-1.5 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="cross">✕</span> Não grava vídeo com o texto na tela</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Velocidade sem granularidade fina</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Interface datada, sem legendas nem IA</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho para equipamento físico</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Controle por teclado Bluetooth</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Compra única no Android</li>
             </ul>
           </div>
           <div class="card rounded-2xl p-5">
-            <p class="text-xs font-semibold uppercase tracking-widest text-red-500">PromptSmart+</p>
-            <h3 class="mt-1.5 text-lg font-bold text-slate-900">VoiceTrack inovador, reconhecimento rígido</h3>
+            <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">PromptSmart+</p>
+            <h3 class="mt-1.5 text-lg font-bold text-slate-900">Rolagem guiada pela fala</h3>
             <ul class="mt-3 space-y-1.5 text-sm text-slate-500">
-              <li class="flex gap-2"><span class="cross">✕</span> Qualquer mudança na fala "quebra" a rolagem</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Vídeo gravado em qualidade reduzida</li>
-              <li class="flex gap-2"><span class="cross">✕</span> Cobrança confusa e cancelamento difícil</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Tecnologia VoiceTrack</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Reconhecimento processado no dispositivo</li>
+              <li class="flex gap-2"><span class="tick font-bold">✓</span> Controle remoto pela web</li>
             </ul>
           </div>
         </div>
@@ -689,8 +692,8 @@
           <div class="relative">
             <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">AlvoPrompter</p>
             <p class="mx-auto mt-3 max-w-3xl text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl">
-              VoiceTrack <span class="grad-text">com tolerância a paráfrase</span> · câmera + gravação nativa ·
-              editor de vídeo · beta transparente · <span class="text-slate-900">dados locais por padrão</span>
+              Rolagem por voz <span class="grad-text">pensada para PT-BR</span> · câmera + gravação na mesma tela ·
+              edição de vídeo · beta transparente · <span class="text-slate-900">dados locais por padrão</span>
             </p>
           </div>
         </div>
@@ -712,7 +715,7 @@
           <div class="card w-[340px] shrink-0 rounded-2xl p-6">
             <div class="flex text-amber-400">★★★★★</div>
             <p class="mt-3 text-sm leading-relaxed text-slate-600">
-              "Preguei o domingo inteiro olhando para a câmera. O VoiceTrack acompanha até quando eu improviso —
+              "Preguei o domingo inteiro olhando para a câmera. A rolagem por voz acompanha até quando eu improviso —
               isso mudou tudo para mim."
             </p>
             <div class="mt-5 flex items-center gap-3">
@@ -794,7 +797,7 @@
           <div class="card w-[340px] shrink-0 rounded-2xl p-6" aria-hidden="true">
             <div class="flex text-amber-400">★★★★★</div>
             <p class="mt-3 text-sm leading-relaxed text-slate-600">
-              "Preguei o domingo inteiro olhando para a câmera. O VoiceTrack acompanha até quando eu improviso —
+              "Preguei o domingo inteiro olhando para a câmera. A rolagem por voz acompanha até quando eu improviso —
               isso mudou tudo para mim."
             </p>
             <div class="mt-5 flex items-center gap-3">
@@ -824,16 +827,21 @@
     </section>
 
     <!-- COMPARATIVO -->
-    <section id="comparativo" class="border-y border-black/5 bg-white py-20">
+    <section id="comparativo" class="section-space border-y border-black/5 bg-white">
       <div class="mx-auto max-w-6xl px-6">
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Comparativo</span>
           <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Por que o <span class="grad-text">AlvoPrompter</span>?
+            Compare pelo que realmente importa
           </h2>
+          <p class="mt-4 text-slate-500">
+            Cada solução atende um perfil. A tabela usa somente recursos e condições divulgados publicamente.
+          </p>
         </div>
-        <div class="reveal mt-12 overflow-x-auto rounded-2xl">
-          <table class="cmp w-full min-w-[760px] border-separate border-spacing-0 text-sm">
+        <p class="reveal mt-8 text-center text-xs font-semibold text-indigo-600 md:hidden" aria-hidden="true">Deslize para comparar →</p>
+        <div class="reveal mt-3 overflow-x-auto rounded-2xl md:mt-10" tabindex="0" role="region" aria-label="Comparação de recursos entre teleprompters" aria-describedby="comparison-note">
+          <table class="cmp w-full min-w-[860px] border-separate border-spacing-0 text-sm">
+            <caption class="sr-only">Comparação objetiva entre BIGVU, Teleprompter Pro, PromptSmart e AlvoPrompter</caption>
             <thead>
               <tr class="text-left text-slate-500">
                 <th class="rounded-tl-xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold">Capacidade</th>
@@ -844,32 +852,35 @@
               </tr>
             </thead>
             <tbody class="text-center text-slate-500">
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Teleprompter core</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅✅</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">VoiceTrack (rola com sua fala)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅ rígido</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ paráfrase</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Offline / on-device</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ core local</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: roteiro</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">IA: legendas + tradução</td><td class="border border-slate-200 px-4 py-3">✅ 70+</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ 70+</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Câmera + texto na mesma tela</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Gravação HD no app</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">⚠️ reduzida</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅ nativa</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Editor IA (corte, reframe, green screen)</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Modo espelho (hardware)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Web Control Room</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ sem servidor</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Acesso atual</td><td class="border border-slate-200 px-4 py-3">Assinatura</td><td class="border border-slate-200 px-4 py-3">Compra</td><td class="border border-slate-200 px-4 py-3">Assinatura</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Grátis ou assinatura</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Plano pago de entrada</td><td class="border border-slate-200 px-4 py-3">US$ 12/mês</td><td class="border border-slate-200 px-4 py-3">US$ 6,49 · compra única</td><td class="border border-slate-200 px-4 py-3">US$ 9,99/mês</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">R$ 29,90/mês · lançamento</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Rolagem guiada pela fala</td><td class="border border-slate-200 px-4 py-3">Não informada</td><td class="border border-slate-200 px-4 py-3">Não informada</td><td class="border border-slate-200 px-4 py-3 font-medium text-slate-700">VoiceTrack</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Em PT-BR</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Uso local ou offline divulgado</td><td class="border border-slate-200 px-4 py-3">Gravação local no plano grátis</td><td class="border border-slate-200 px-4 py-3">Não informado</td><td class="border border-slate-200 px-4 py-3">Reconhecimento no dispositivo</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Core local; voz depende do navegador</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Gravação com teleprompter</td><td class="border border-slate-200 px-4 py-3">Disponível</td><td class="border border-slate-200 px-4 py-3">Não informada</td><td class="border border-slate-200 px-4 py-3">Disponível no app Plus</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Disponível</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Legendas e edição com IA</td><td class="border border-slate-200 px-4 py-3">Planos AI Pro e Max</td><td class="border border-slate-200 px-4 py-3">Não informado</td><td class="border border-slate-200 px-4 py-3">Não informado</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Disponível; processamento em nuvem</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Controle remoto</td><td class="border border-slate-200 px-4 py-3">Não informado</td><td class="border border-slate-200 px-4 py-3">Teclado Bluetooth</td><td class="border border-slate-200 px-4 py-3">Web e mobile</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Outro aparelho via WebRTC</td></tr>
+              <tr><td class="rounded-bl-xl border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Equipe e níveis de acesso</td><td class="border border-slate-200 px-4 py-3">AI Pro ou superior</td><td class="border border-slate-200 px-4 py-3">Não informado</td><td class="border border-slate-200 px-4 py-3">Plano Team</td><td class="col-alvo rounded-br-xl border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Plano Studio</td></tr>
             </tbody>
           </table>
         </div>
+        <p id="comparison-note" class="reveal mx-auto mt-5 max-w-4xl text-center text-xs leading-relaxed text-slate-400">
+          Fontes oficiais consultadas em 19/08/2026:
+          <a class="underline decoration-slate-300 underline-offset-2 hover:text-slate-600" href="https://bigvu.tv/pricing" target="_blank" rel="noreferrer">BIGVU</a>,
+          <a class="underline decoration-slate-300 underline-offset-2 hover:text-slate-600" href="https://play.google.com/store/apps/details?id=com.teleprompter" target="_blank" rel="noreferrer">Teleprompter Pro</a> e
+          <a class="underline decoration-slate-300 underline-offset-2 hover:text-slate-600" href="https://www.promptsmart.com/pricing" target="_blank" rel="noreferrer">PromptSmart</a>.
+          Recursos e preços podem variar por plano, plataforma, região e câmbio. “Não informado” significa apenas que o item não aparece na fonte consultada. As marcas pertencem aos respectivos titulares.
+        </p>
       </div>
     </section>
 
     <!-- PREÇOS -->
-    <section id="precos" class="mx-auto max-w-6xl px-6 py-20">
+    <section id="precos" class="section-space mx-auto max-w-6xl px-6">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Planos</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Comece grátis. Assine quando <span class="grad-text">a produção crescer</span>
         </h2>
         <p class="mt-4 text-slate-500">
-          Cobrança mensal recorrente pelo checkout seguro do Asaas. O plano só é liberado após a confirmação do pagamento.
+          Comece sem cartão. Os planos pagos são mensais, sem fidelidade, e a renovação pode ser cancelada pelo app.
         </p>
 
       </div>
@@ -880,46 +891,53 @@
           <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 0</p>
           <p class="mt-2 text-sm text-slate-500">Para experimentar sem cartão.</p>
           <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter e VoiceTrack</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter e rolagem por voz</li>
             <li class="flex gap-2"><span class="tick font-bold">✓</span> Roteiros salvos localmente</li>
             <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação e modo espelho</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> 10 ações de IA por mês</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 10 usos de IA por mês</li>
           </ul>
           <a href="/" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Começar grátis</a>
         </article>
 
         <article class="relative flex flex-col rounded-3xl border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white p-6 shadow-xl shadow-indigo-500/15">
-          <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold">MAIS ESCOLHIDO</span>
+          <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold">RECOMENDADO</span>
           <p class="text-sm font-bold uppercase tracking-widest text-indigo-600">Criador</p>
-          <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 29,90<span class="text-base font-medium text-slate-400">/mês</span></p>
+          <p class="mt-3 text-xs font-bold uppercase tracking-widest text-slate-400">Preço de lançamento</p>
+          <p class="mt-1 text-4xl font-extrabold text-slate-900">R$ 29,90<span class="text-base font-medium text-slate-400">/mês</span></p>
           <p class="mt-2 text-sm text-slate-500">Para quem publica com frequência.</p>
           <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do plano Grátis</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sincronização em nuvem</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> 100 ações de IA por mês</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Roteiros sem limite</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sincronização e backup na nuvem</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 100 usos de IA por mês</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 1 workspace pessoal na nuvem</li>
           </ul>
           <a href="/?plan=creator" data-app-path="?plan=creator" class="js-app btn-primary mt-8 block rounded-xl py-3 text-center text-sm">Assinar Criador</a>
         </article>
 
         <article class="card card-hover flex flex-col rounded-3xl p-6">
           <p class="text-sm font-bold uppercase tracking-widest text-slate-400">Studio</p>
-          <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 79,90<span class="text-base font-medium text-slate-400">/mês</span></p>
+          <p class="mt-3 text-xs font-bold uppercase tracking-widest text-slate-400">Preço de lançamento</p>
+          <p class="mt-1 text-4xl font-extrabold text-slate-900">R$ 79,90<span class="text-base font-medium text-slate-400">/mês</span></p>
           <p class="mt-2 text-sm text-slate-500">Para marcas e pequenas equipes.</p>
           <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do plano Criador</li>
             <li class="flex gap-2"><span class="tick font-bold">✓</span> Até 5 membros</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Papéis e permissões (RBAC)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Brand kit e 300 ações de IA/mês</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Acessos de proprietário, admin, editor e leitor</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Brand kit e 300 usos de IA/mês</li>
           </ul>
           <a href="/?plan=studio" data-app-path="?plan=studio" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Assinar Studio</a>
         </article>
       </div>
 
+      <p class="reveal mx-auto mt-6 max-w-3xl text-center text-xs leading-relaxed text-slate-400">
+        Valores de lançamento durante o beta. Pagamento recorrente processado no checkout seguro do Asaas.
+        O plano é ativado após a confirmação do pagamento; ao cancelar, o acesso continua até o fim do período já pago.
+      </p>
+
     </section>
 
     <!-- FAQ -->
-    <section id="faq" class="mx-auto max-w-3xl px-6 py-20">
+    <section id="faq" class="section-space mx-auto max-w-3xl px-6">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">FAQ</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Perguntas frequentes</h2>
@@ -931,7 +949,7 @@
             <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
-            Roteiros, prompter e gravação funcionam localmente. O VoiceTrack depende do serviço de reconhecimento
+            Roteiros, prompter e gravação funcionam localmente. A rolagem por voz depende do serviço de reconhecimento
             disponível no navegador e pode exigir internet. Geração de texto, tradução, transcrição e avatares usam nuvem.
           </p>
         </details>
@@ -957,7 +975,7 @@
         </details>
         <details class="card rounded-xl px-5 py-4">
           <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            O VoiceTrack entende português?
+            A rolagem por voz entende português?
             <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
@@ -979,7 +997,7 @@
     </section>
 
     <!-- CTA FINAL -->
-    <section class="relative overflow-hidden bg-slate-950 py-24">
+    <section class="section-space-cta relative overflow-hidden bg-slate-950">
       <div class="orb left-[-100px] top-[-80px] h-[340px] w-[340px] bg-violet-600/60" aria-hidden="true"></div>
       <div class="orb right-[-80px] bottom-[-100px] h-[340px] w-[340px] bg-cyan-500/50" aria-hidden="true" style="animation-delay:-5s"></div>
       <div class="pointer-events-none absolute inset-0 opacity-20" style="background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size: 44px 44px;" aria-hidden="true"></div>

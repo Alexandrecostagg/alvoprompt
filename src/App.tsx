@@ -79,6 +79,7 @@ export default function App() {
   const view = useAppStore((state) => state.view)
   const currentScript = useAppStore((state) => state.currentScript)
   const setView = useAppStore((state) => state.setView)
+  const selectScript = useAppStore((state) => state.selectScript)
   const { theme, toggleTheme } = useTheme()
   const [moreOpen, setMoreOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -101,6 +102,18 @@ export default function App() {
     setView(next)
   }
 
+  const openPrompterFlow = () => {
+    if (currentScript?.content.trim()) {
+      navigate('prompter')
+      return
+    }
+    if (!currentScript) {
+      const now = Date.now()
+      selectScript({ title: 'Novo roteiro', content: '', createdAt: now, updatedAt: now })
+    }
+    navigate('editor')
+  }
+
   if (view === 'prompter' || view === 'video-editor' || view === 'control') {
     return (
       <Suspense fallback={<LoadingView />}>
@@ -115,7 +128,7 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b px-4 py-2.5 lg:hidden" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--panel) 94%, transparent)' }}>
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b px-4 pb-2.5 pt-2.5 backdrop-blur-xl lg:hidden" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--panel) 90%, transparent)', paddingTop: 'max(.625rem, env(safe-area-inset-top))' }}>
         <button onClick={() => navigate('library')} aria-label="Ir para meus roteiros"><BrandMark compact /></button>
         <div className="flex items-center gap-2"><button onClick={() => setAccountOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Abrir conta e planos"><Icon name="account" /></button><button onClick={() => setMoreOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Abrir menu"><Icon name="more" /></button></div>
       </header>
@@ -137,7 +150,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-0">
         <Suspense fallback={<LoadingView />}>
           {view === 'library' ? <ScriptLibrary /> : null}
           {view === 'editor' ? <ScriptEditor /> : null}
@@ -150,7 +163,8 @@ export default function App() {
       {moreOpen ? (
         <>
           <button className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={() => setMoreOpen(false)} aria-label="Fechar menu" />
-          <section className="fixed inset-x-3 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-50 rounded-3xl border p-4 shadow-2xl lg:hidden" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }} role="dialog" aria-modal="true" aria-label="Mais ferramentas">
+          <section className="fixed inset-x-0 bottom-[calc(4.9rem+env(safe-area-inset-bottom))] z-50 rounded-t-[2rem] border p-4 pb-5 shadow-2xl lg:hidden" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }} role="dialog" aria-modal="true" aria-label="Mais ferramentas">
+            <span className="mx-auto mb-3 block h-1 w-12 rounded-full" style={{ background: 'var(--border)' }} aria-hidden="true" />
             <div className="mb-3 flex items-center justify-between">
               <div><p className="font-bold">Mais ferramentas</p><p className="text-xs" style={{ color: 'var(--muted)' }}>Produção, equipe e preferências</p></div>
               <button onClick={() => setMoreOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: 'var(--bg)', color: 'var(--muted)' }} aria-label="Fechar">×</button>
@@ -173,7 +187,7 @@ export default function App() {
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t px-2 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--panel) 96%, transparent)', boxShadow: '0 -12px 30px rgba(15,23,42,.08)' }} aria-label="Navegação principal">
         <MobileNavButton icon="scripts" label="Roteiros" active={view === 'library'} onClick={() => navigate('library')} />
         <MobileNavButton icon="edit" label="Editor" active={view === 'editor'} disabled={!currentScript} onClick={() => navigate('editor')} />
-        <MobileNavButton icon="record" label="Prompter" primary disabled={!currentScript} onClick={() => navigate('prompter')} />
+        <MobileNavButton icon="record" label="Prompter" primary onClick={openPrompterFlow} />
         <MobileNavButton icon="calendar" label="Agenda" active={view === 'scheduling'} onClick={() => navigate('scheduling')} />
         <MobileNavButton icon="more" label="Mais" active={moreActive} onClick={() => setMoreOpen(true)} />
       </nav>

@@ -155,7 +155,7 @@ export function useVoiceTrack({
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         runningRef.current = false
         setListening(false)
-        setError('Permissão de microfone negada. Habilite o microfone para usar o VoiceTrack.')
+        setError('Permissão de microfone negada. Habilite o microfone para usar a rolagem por voz.')
         return
       }
       if (event.error === 'no-speech') return

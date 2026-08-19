@@ -30,11 +30,11 @@ interface SettingsPanelProps {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex items-center justify-between gap-3 py-2.5">
+    <label className="flex flex-col items-stretch gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="text-sm" style={{ color: 'var(--text)' }}>
         {label}
       </span>
-      <div className="flex items-center gap-2">{children}</div>
+      <div className="flex items-center justify-end gap-2">{children}</div>
     </label>
   )
 }
@@ -52,12 +52,12 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="relative h-6 w-11 rounded-full transition-colors"
+      className="relative h-7 w-12 rounded-full transition-colors"
       style={{ background: checked ? 'var(--accent)' : 'var(--border)' }}
     >
       <span
-        className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
-        style={{ left: checked ? 'calc(100% - 22px)' : '2px' }}
+        className="absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all"
+        style={{ left: checked ? 'calc(100% - 26px)' : '2px' }}
       />
     </button>
   )
@@ -73,13 +73,13 @@ function Segmented<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="flex rounded-lg border p-0.5" style={{ borderColor: 'var(--border)' }}>
+    <div className="flex max-w-full overflow-x-auto rounded-xl border p-0.5" style={{ borderColor: 'var(--border)' }}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+          className="min-h-9 shrink-0 rounded-lg px-3 py-1 text-xs font-medium transition-colors"
           style={{
             background: value === opt.value ? 'var(--accent)' : 'transparent',
             color: value === opt.value ? 'black' : 'var(--muted)',
@@ -97,20 +97,26 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
   const resetSettings = useAppStore((s) => s.resetSettings)
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="flex h-full w-full max-w-sm flex-col border-l" style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}>
+    <div className="fixed inset-0 z-40 flex items-end sm:justify-end">
+      <button aria-label="Fechar configurações" onClick={onClose} className="absolute inset-0 bg-black/60" />
+      <div className="relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[2rem] border sm:h-full sm:max-h-none sm:max-w-sm sm:rounded-none sm:border-l" style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}>
+        <span className="mx-auto mt-3 block h-1 w-12 rounded-full sm:hidden" style={{ background: 'var(--border)' }} aria-hidden="true" />
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--border)' }}>
-          <h2 className="font-semibold text-white">Configurações do Prompter</h2>
+          <div><h2 className="font-semibold text-white">Ajustes do prompter</h2><p className="mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>Veja o resultado enquanto configura.</p></div>
           <button
             onClick={onClose}
-            className="rounded-lg border px-3 py-1 text-sm"
+            className="min-h-10 rounded-xl border px-3 text-sm font-semibold"
             style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
           >
-            Fechar (Esc)
+            Concluir
           </button>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <div className="mx-5 mt-4 overflow-hidden rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: settings.bgColor }} aria-label="Prévia do texto do prompter">
+          <p className="truncate text-center" style={{ color: settings.fontColor, fontFamily: settings.fontFamily, fontSize: Math.min(settings.fontSize, 28), lineHeight: settings.lineHeight, letterSpacing: settings.letterSpacing, transform: settings.mirror ? 'scaleX(-1)' : undefined }}>Seu roteiro aparece assim na tela</p>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
               Rolagem
@@ -335,11 +341,6 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
           </button>
         </div>
       </div>
-      <button
-        aria-label="Fechar configurações"
-        onClick={onClose}
-        className="absolute inset-0 -z-10 cursor-default"
-      />
     </div>
   )
 }

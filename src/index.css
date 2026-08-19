@@ -57,6 +57,16 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+a,
+summary {
+  touch-action: manipulation;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,

@@ -82,15 +82,18 @@ Estúdio de vídeo de bolso com IA: **roteiro → prompter → gravação → le
 
 ---
 
-## 4. Modelo de Preço (diferencial estratégico)
-| Plano | Preço (sugestão BR) | O que inclui |
-|---|---|---|
-| **Free** | R$ 0 | Prompter completo + VoiceTrack (offline), textos ilimitados, gravação HD até 10 min, 1080p, marca d'água sutil, créditos IA limitados |
-| **Pro (compra única)** | ~R$ 149 | Sem marca d'água, 4K, import multi-formato, modo espelho, Bluetooth, editor básico, créditos IA mensais |
-| **Studio (assinatura)** | ~R$ 29/mês ou R$ 249/ano | Tudo do Pro + editor IA completo, legendas 70+ idiomas, agendamento multi-canal, times, web control room |
+## 4. Modelo de preço
+| Plano | Preço atual | O que inclui |
+|---|---:|---|
+| **Grátis** | R$ 0 | Prompter, rolagem por voz, roteiros locais, gravação, modo espelho e 10 usos de IA/mês |
+| **Criador** | R$ 29,90/mês | Tudo do Grátis, sync e backup, 1 workspace pessoal e 100 usos de IA/mês |
+| **Studio** | R$ 79,90/mês | Tudo do Criador, até 5 membros, níveis de acesso, brand kit e 300 usos de IA/mês |
 
-- **Sem pressão de upgrade**: trial real de 7 dias com cancelamento em 1 toque no app (resolve as queixas de faturamento dos 3)
-- Compra única como âncora de confiança (assim como o Teleprompter Pro faz)
+- Os valores atuais são apresentados como **preços de lançamento durante o beta**.
+- Posicionamento desejado: produto brasileiro premium acessível, sem competir apenas por menor preço.
+- Referência para revisão após validar custo e retenção: Criador a R$ 39,90/mês e Studio a R$ 119,90/mês.
+- O plano anual deve ser lançado somente após medir custo real de IA, oferecendo desconto equivalente a até dois meses.
+- Planos mensais, sem fidelidade, com cancelamento da renovação pelo app e acesso preservado até o fim do período pago.
 
 ---
 

@@ -21,7 +21,8 @@ function PlanCard({ planId, currentPlan, busy, onChoose }: { planId: PlanId; cur
     <article className="relative flex h-full flex-col rounded-3xl border p-5" style={{ borderColor: plan.badge ? 'var(--accent)' : 'var(--border)', background: plan.badge ? 'var(--accent-soft)' : 'var(--bg)' }}>
       {plan.badge ? <span className="mb-3 w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: 'var(--brand-gradient)', color: 'white' }}>{plan.badge}</span> : null}
       <h3 className="text-lg font-bold">{plan.name}</h3>
-      <p className="mt-2 text-3xl font-extrabold">{formatPlanPrice(plan.priceMonthly)}{plan.priceMonthly > 0 ? <span className="text-sm font-medium" style={{ color: 'var(--muted)' }}>/mês</span> : null}</p>
+      {plan.priceMonthly > 0 ? <p className="mt-2 text-[10px] font-bold uppercase tracking-[.14em]" style={{ color: 'var(--muted)' }}>Preço de lançamento</p> : null}
+      <p className={plan.priceMonthly > 0 ? 'mt-1 text-3xl font-extrabold' : 'mt-2 text-3xl font-extrabold'}>{formatPlanPrice(plan.priceMonthly)}{plan.priceMonthly > 0 ? <span className="text-sm font-medium" style={{ color: 'var(--muted)' }}>/mês</span> : null}</p>
       <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{plan.description}</p>
       <ul className="my-5 space-y-2 text-sm">
         {plan.features.map((feature) => <li key={feature} className="flex gap-2"><span style={{ color: 'var(--ok)' }}>✓</span><span>{feature}</span></li>)}
@@ -195,14 +196,14 @@ export default function AccountPanel({ open, initialPlan, onClose }: { open: boo
           </div>
         ) : (
           <div className="mt-7 flex flex-wrap items-center justify-between gap-4 rounded-3xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
-            <div><p className="font-bold">{user.displayName || 'Minha conta'}</p><p className="text-sm" style={{ color: 'var(--muted)' }}>{user.email} · Plano {PLANS[account?.subscription.plan ?? 'free'].name}</p>{account ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{account.usage.aiActions} de {account.limits.aiActionsMonthly} ações de IA usadas neste mês</p> : null}{account?.subscription.currentPeriodEnd ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>Ciclo atual até {new Date(account.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</p> : null}</div>
+            <div><p className="font-bold">{user.displayName || 'Minha conta'}</p><p className="text-sm" style={{ color: 'var(--muted)' }}>{user.email} · Plano {PLANS[account?.subscription.plan ?? 'free'].name}</p>{account ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{account.usage.aiActions} de {account.limits.aiActionsMonthly} usos de IA neste mês</p> : null}{account?.subscription.currentPeriodEnd ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>Ciclo atual até {new Date(account.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</p> : null}</div>
             <div className="flex flex-wrap gap-2">{account?.subscription.status === 'active' ? <button onClick={() => void cancelRenewal()} disabled={busy} className="min-h-11 rounded-2xl border px-4 text-sm font-bold disabled:opacity-50" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>Cancelar renovação</button> : null}<button onClick={() => void signUserOut()} className="min-h-11 rounded-2xl border px-4 text-sm font-bold" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>Sair da conta</button></div>
           </div>
         )}
 
         {user && account ? (
           <section className="mt-7 rounded-3xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Equipe com permissões reais</h3><p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>O servidor valida proprietário, admin, editor e leitor em cada operação.</p></div><span className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>RBAC</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Equipe com níveis de acesso</h3><p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>O servidor valida proprietário, admin, editor e leitor em cada operação.</p></div><span className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>ACESSOS</span></div>
             {account.limits.workspaces === 0 ? <p className="mt-4 text-sm" style={{ color: 'var(--muted)' }}>Workspaces em nuvem começam no Criador; convites e até 5 membros ficam no Studio.</p> : (
               <>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row"><input value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} placeholder="Nome do novo workspace" maxLength={80} className="min-h-11 flex-1 rounded-2xl border bg-transparent px-4 text-sm outline-none" style={{ borderColor: 'var(--border)' }} /><button onClick={() => void addWorkspace()} disabled={busy || !workspaceName.trim()} className="min-h-11 rounded-2xl px-4 text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--brand-gradient)' }}>Criar workspace</button></div>
@@ -222,7 +223,7 @@ export default function AccountPanel({ open, initialPlan, onClose }: { open: boo
           <PlanCard planId="free" currentPlan={account?.subscription.plan ?? 'free'} busy={busy} onChoose={choosePlan} />
           {PAID_PLAN_IDS.map((planId) => <PlanCard key={planId} planId={planId} currentPlan={account?.subscription.plan ?? 'free'} busy={busy} onChoose={choosePlan} />)}
         </div>
-        <p className="mt-5 text-center text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>Os planos pagos são mensais e recorrentes. O acesso só é liberado após confirmação do Asaas. Nenhum dado de cartão passa pelo AlvoPrompter.</p>
+        <p className="mt-5 text-center text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>Valores de lançamento durante o beta. Os planos pagos são mensais e recorrentes. O acesso só é liberado após confirmação do Asaas. Nenhum dado de cartão passa pelo AlvoPrompter.</p>
       </div>
     </div>
   )

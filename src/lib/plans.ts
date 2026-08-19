@@ -20,7 +20,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     name: 'Grátis',
     priceMonthly: 0,
     description: 'Para testar o prompter e gravar no próprio dispositivo.',
-    features: ['Prompter e VoiceTrack', 'Roteiros salvos localmente', 'Gravação e modo espelho'],
+    features: ['Prompter e rolagem por voz', 'Roteiros salvos localmente', 'Gravação e modo espelho', '10 usos de IA por mês'],
     limits: { workspaces: 0, members: 1, aiActionsMonthly: 10 },
   },
   creator: {
@@ -28,8 +28,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     name: 'Criador',
     priceMonthly: 29.9,
     description: 'Para quem publica com frequência e quer acelerar a produção.',
-    badge: 'Mais escolhido',
-    features: ['Tudo do plano Grátis', 'Sincronização em nuvem', '100 ações de IA por mês', 'Sem limite de roteiros'],
+    badge: 'Recomendado',
+    features: ['Tudo do plano Grátis', 'Sincronização e backup na nuvem', '100 usos de IA por mês', '1 workspace pessoal na nuvem'],
     limits: { workspaces: 1, members: 1, aiActionsMonthly: 100 },
   },
   studio: {
@@ -37,7 +37,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     name: 'Studio',
     priceMonthly: 79.9,
     description: 'Para marcas e pequenas equipes com aprovação e identidade visual.',
-    features: ['Tudo do plano Criador', 'Até 5 membros', 'Papéis e permissões (RBAC)', 'Brand kit', '300 ações de IA por mês'],
+    features: ['Tudo do plano Criador', 'Até 5 membros', 'Acessos de proprietário, admin, editor e leitor', 'Brand kit', '300 usos de IA por mês'],
     limits: { workspaces: 5, members: 5, aiActionsMonthly: 300 },
   },
 }

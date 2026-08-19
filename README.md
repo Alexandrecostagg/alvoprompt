@@ -60,13 +60,13 @@ npm run build
 
 ## Contas, planos e cobrança
 
-Os planos iniciais estão centralizados em `src/lib/plans.ts` e também validados no Worker:
+Os planos iniciais, com valores de lançamento durante o beta, estão centralizados em `src/lib/plans.ts` e também validados no Worker:
 
 | Plano | Mensalidade | Uso principal |
 |---|---:|---|
-| Grátis | R$ 0 | Prompter local, VoiceTrack, gravação e 10 ações de IA/mês |
-| Criador | R$ 29,90 | Sync em nuvem, roteiros ilimitados e 100 ações de IA/mês |
-| Studio | R$ 79,90 | Até 5 membros, RBAC, brand kit e 300 ações de IA/mês |
+| Grátis | R$ 0 | Prompter local, rolagem por voz, gravação e 10 usos de IA/mês |
+| Criador | R$ 29,90 | Sync e backup, 1 workspace pessoal e 100 usos de IA/mês |
+| Studio | R$ 79,90 | Até 5 membros, níveis de acesso, brand kit e 300 usos de IA/mês |
 
 O checkout é hospedado pelo Asaas; dados de cartão não passam pelo AlvoPrompter. Criar o checkout não libera acesso. O plano é ativado somente pelo webhook autenticado `CHECKOUT_PAID`, com idempotência pelo ID do evento. Eventos de cobrança e assinatura atualizam atraso, renovação e cancelamento. O titular pode cancelar a renovação no app; o Worker remove a recorrência no Asaas e preserva o acesso até o fim do período já pago. As cotas mensais de IA são consumidas atomicamente no D1 antes da chamada ao provedor e não dependem do navegador.
 

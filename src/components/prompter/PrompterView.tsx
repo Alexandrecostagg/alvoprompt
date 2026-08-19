@@ -383,24 +383,14 @@ export default function PrompterView() {
   return (
     <div className="flex h-full flex-col" style={{ background: settings.bgColor }}>
       <div
-        className="flex items-center justify-between gap-3 border-b px-4 py-2"
-        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.92)' }}
+        className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b px-3 pb-2 pt-2 sm:px-4"
+        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.94)', paddingTop: 'max(.5rem, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setView('library')}
-            className="rounded-lg border px-3 py-1 text-sm"
-            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
-          >
-            ← Sair
-          </button>
-          <span className="max-w-48 truncate text-sm font-medium text-white on-dark sm:max-w-72">
-            {currentScript.title || 'Sem título'}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+        <button onClick={() => setView('library')} className="grid h-11 w-11 place-items-center rounded-2xl border text-lg" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Sair do prompter">←</button>
+        <div className="min-w-0 text-center">
+          <p className="truncate text-sm font-semibold text-white on-dark">{currentScript.title || 'Sem título'}</p>
           <span
-            className="rounded-full px-3 py-1 font-medium"
+            className="mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
             style={{
               background:
                 engine.state === 'running' ? 'rgba(52,211,153,0.15)' : 'var(--panel)',
@@ -410,35 +400,32 @@ export default function PrompterView() {
           >
             {statusLabel}
           </span>
-          {settings.mode === 'voice' && !voice.supported && (
-            <span className="hidden rounded-full border px-3 py-1 sm:inline" style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
-              Reconhecimento de voz indisponível — use modo Fixa
-            </span>
-          )}
-          {voice.error && (
-            <span className="hidden rounded-full border px-3 py-1 md:inline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-              {voice.error}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={toggleFullscreen}
-            className="rounded-lg border px-3 py-1 text-sm"
+            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg"
             style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
-            title="Tela cheia"
+            aria-label="Alternar tela cheia"
           >
             ⛶
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="rounded-lg border px-3 py-1 text-sm"
+            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+            aria-label="Abrir ajustes do prompter"
           >
-            ⚙ Ajustes
+            ⚙
           </button>
         </div>
       </div>
+
+      {settings.mode === 'voice' && (!voice.supported || voice.error) ? (
+        <div className="border-b px-3 py-2 text-center text-xs" style={{ borderColor: 'var(--border)', background: 'rgba(251,191,36,.12)', color: voice.error ? 'var(--danger)' : 'var(--warn)' }} role="status">
+          {voice.error || 'Rolagem por voz indisponível neste aparelho. Use o modo de velocidade fixa.'}
+        </div>
+      ) : null}
 
       {settings.cameraPosition === 'top' && cameraBlock}
 
@@ -490,34 +477,31 @@ export default function PrompterView() {
       {settings.cameraPosition === 'bottom' && cameraBlock}
 
       <div
-        className="border-t px-4 py-3"
-        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.92)' }}
+        className="border-t px-3 pb-3 pt-2 sm:px-4"
+        style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.94)', paddingBottom: 'max(.75rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="mx-auto flex max-w-4xl items-center gap-3">
+        <div className="mx-auto mb-2 flex max-w-4xl items-center gap-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
+            <div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${progressPct}%`, background: 'var(--accent)' }} />
+          </div>
+          <span className="w-9 text-right text-[11px] tabular-nums" style={{ color: 'var(--muted)' }}>{progressPct}%</span>
+        </div>
+        <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 sm:gap-3">
           <button
             onClick={engine.stop}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border text-lg"
             style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
-            title="Reiniciar"
+            aria-label="Reiniciar roteiro"
           >
             ⟲
           </button>
           <button
             onClick={handlePrimary}
-            className="rounded-lg px-5 py-2 text-sm font-semibold text-black"
-            style={{ background: engine.state === 'running' ? 'var(--warn)' : 'var(--accent)' }}
+            className="min-h-14 min-w-0 flex-1 rounded-2xl px-5 text-base font-bold sm:max-w-xs"
+            style={{ background: engine.state === 'running' ? 'var(--warn)' : 'var(--brand-gradient)', color: engine.state === 'running' ? '#151927' : '#fff' }}
           >
             {engine.state === 'running' ? '❚❚ Pausar' : '▶ Iniciar'}
           </button>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
-            <div
-              className="h-full rounded-full transition-[width] duration-200"
-              style={{ width: `${progressPct}%`, background: 'var(--accent)' }}
-            />
-          </div>
-          <span className="w-10 text-right text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-            {progressPct}%
-          </span>
           {gamepadConnected && (
             <span className="hidden rounded-full border px-2 py-1 text-[11px] sm:inline" style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}>
               🎮 pedal ativo
@@ -536,7 +520,7 @@ export default function PrompterView() {
                   recorder.start()
                 }
               }}
-              className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+              className="flex h-12 shrink-0 items-center gap-2 rounded-2xl border px-3 text-sm font-semibold"
               style={{
                 borderColor: recorder.isRecording ? 'var(--danger)' : 'var(--border)',
                 color: recorder.isRecording ? 'var(--danger)' : 'var(--text)',
@@ -550,13 +534,13 @@ export default function PrompterView() {
               ) : (
                 <>
                   <span className="h-2 w-2 rounded-full" style={{ background: 'var(--danger)' }} />
-                  Gravar
+                  <span className="hidden min-[390px]:inline">Gravar</span>
                 </>
               )}
             </button>
           )}
         </div>
-        <p className="mt-2 text-center text-[11px]" style={{ color: 'var(--muted)' }}>
+        <p className="mt-2 hidden text-center text-[11px] sm:block" style={{ color: 'var(--muted)' }}>
           Espaço: iniciar/pausar · ↑↓: ajustar posição · M: espelhar · Esc: sair
           {gamepadConnected && ' · Pedal: ▶=botão 1 · ⟲=botão 2 · ↑↓=botões 3/4'}
         </p>
@@ -567,9 +551,9 @@ export default function PrompterView() {
       )}
 
       {showResult && recorder.videoUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 sm:items-center sm:p-6">
           <div
-            className="w-full max-w-2xl rounded-2xl border p-5"
+            className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-2xl sm:rounded-2xl sm:pb-5"
             style={{ background: 'var(--panel)', borderColor: 'var(--border)' }}
           >
             <h3 className="mb-3 font-semibold text-white on-dark">Gravação concluída</h3>

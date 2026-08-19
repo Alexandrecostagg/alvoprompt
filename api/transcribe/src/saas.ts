@@ -389,7 +389,7 @@ export async function authorizeAiAction(request: Request, env: SaaSEnv): Promise
       WHERE usage_monthly.ai_actions < ?
     `).bind(user.uid, month, new Date().toISOString(), limit).run()
     if ((result.meta.changes ?? 0) === 0) {
-      return responseJson({ error: `Você atingiu as ${limit} ações de IA do plano ${plan}.` }, 429)
+      return responseJson({ error: `Você atingiu os ${limit} usos de IA do plano ${plan}.` }, 429)
     }
     return null
   } catch (error) {
