@@ -18,7 +18,7 @@ function relativeTime(ts: number): string {
 }
 
 export default function ScriptLibrary() {
-  const { scripts, loading, removeScript, selectScript, setView, settings, openAiPanel } =
+  const { scripts, loading, loadError, removeScript, selectScript, setView, settings, openAiPanel } =
     useAppStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
@@ -98,29 +98,44 @@ export default function ScriptLibrary() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Meus roteiros</h1>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--brand-strong)' }}>Seu estúdio</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Meus roteiros</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
             {scripts.length} roteiro{scripts.length === 1 ? '' : 's'} · salvos localmente no seu
             dispositivo
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <button
+            onClick={createNew}
+            className="min-h-11 rounded-xl px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            style={{ background: 'var(--brand-gradient)' }}
+          >
+            + Novo roteiro
+          </button>
+          <button
+            onClick={createWithAi}
+            className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}
+          >
+            ✦ Criar com IA
+          </button>
           <button
             onClick={() => {
               setLinkError(null)
               setShowLinkImport(true)
             }}
-            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+            className="min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             Importar de link
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+            className="min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             Importar arquivo
@@ -128,24 +143,10 @@ export default function ScriptLibrary() {
           <button
             onClick={() => audioRef.current?.click()}
             disabled={audioBusy}
-            className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+            className="col-span-2 min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 sm:col-span-1"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             {audioBusy ? 'Transcrevendo...' : '🎙 Importar áudio'}
-          </button>
-          <button
-            onClick={createWithAi}
-            className="rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-2)', color: '#0e0a1a' }}
-          >
-            ✨ Gerar com IA
-          </button>
-          <button
-            onClick={createNew}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent)' }}
-          >
-            + Novo roteiro
           </button>
         </div>
         <input
@@ -172,23 +173,28 @@ export default function ScriptLibrary() {
         />
       </div>
 
-      {loading ? (
+      {loadError ? (
+        <div className="rounded-2xl border p-4 text-sm" role="alert" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', background: 'var(--panel)' }}>
+          {loadError} Recarregue o aplicativo e tente novamente.
+        </div>
+      ) : loading ? (
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
           Carregando...
         </p>
       ) : scripts.length === 0 ? (
         <div
-          className="rounded-2xl border border-dashed p-12 text-center"
-          style={{ borderColor: 'var(--border)' }}
+          className="rounded-3xl border p-7 text-center sm:p-12"
+          style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
         >
-          <p className="text-lg font-medium text-white">Nenhum roteiro ainda</p>
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl text-2xl" style={{ background: 'var(--accent-soft)' }}>⌁</div>
+          <p className="mt-4 text-lg font-bold text-white">Seu primeiro roteiro começa aqui</p>
           <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
             Crie um roteiro ou importe um arquivo .txt / .md / .docx / PDF / áudio para começar.
           </p>
           <button
             onClick={createNew}
-            className="mt-6 rounded-lg px-5 py-2.5 text-sm font-semibold text-black"
-            style={{ background: 'var(--accent)' }}
+            className="mt-6 min-h-11 rounded-xl px-5 py-2.5 text-sm font-bold text-white"
+            style={{ background: 'var(--brand-gradient)' }}
           >
             Criar meu primeiro roteiro
           </button>
@@ -201,7 +207,7 @@ export default function ScriptLibrary() {
             return (
               <li
                 key={script.id}
-                className="group flex items-center gap-4 rounded-xl border p-4 transition-colors"
+                className="group flex flex-col gap-4 rounded-2xl border p-4 transition-colors sm:flex-row sm:items-center"
                 style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
               >
                 <button
@@ -217,11 +223,11 @@ export default function ScriptLibrary() {
                     {relativeTime(script.updatedAt)}
                   </p>
                 </button>
-                <div className="flex shrink-0 gap-2">
+                <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:shrink-0">
                   <button
                     onClick={() => openPrompter(script)}
-                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-black"
-                    style={{ background: 'var(--accent)' }}
+                    className="min-h-10 rounded-xl px-3 py-1.5 text-xs font-bold text-white"
+                    style={{ background: 'var(--brand-gradient)' }}
                   >
                     Prompter
                   </button>
@@ -230,14 +236,16 @@ export default function ScriptLibrary() {
                       selectScript(script)
                       setView('editor')
                     }}
-                    className="rounded-lg border px-3 py-1.5 text-xs font-medium"
+                    className="min-h-10 rounded-xl border px-3 py-1.5 text-xs font-medium"
                     style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                   >
                     Editar
                   </button>
                   <button
-                    onClick={() => script.id != null && removeScript(script.id)}
-                    className="rounded-lg border px-3 py-1.5 text-xs font-medium"
+                    onClick={() => {
+                      if (script.id != null && window.confirm(`Excluir “${script.title || 'Sem título'}”?`)) void removeScript(script.id)
+                    }}
+                    className="min-h-10 rounded-xl border px-3 py-1.5 text-xs font-medium"
                     style={{ borderColor: 'var(--border)', color: 'var(--danger)' }}
                     aria-label="Excluir roteiro"
                   >
@@ -259,7 +267,7 @@ export default function ScriptLibrary() {
             <h3 className="mb-1 font-semibold text-white on-dark">Importar de link</h3>
             <p className="mb-4 text-xs" style={{ color: 'var(--muted)' }}>
               Cole uma URL pública. YouTube (transcrição via legendas), Google Docs e qualquer
-              página com texto são suportados pela API Alvoprompt.
+              página com texto são suportados pela API AlvoPrompter.
             </p>
             <input
               autoFocus

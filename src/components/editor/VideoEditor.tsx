@@ -259,7 +259,7 @@ export default function VideoEditor() {
     if (!avatarPreview) return
     const a = document.createElement('a')
     a.href = avatarPreview
-    a.download = 'alvoprompt-avatar.png'
+    a.download = 'alvoprompter-avatar.png'
     a.click()
   }
 
@@ -1182,7 +1182,7 @@ export default function VideoEditor() {
               <div className="flex flex-wrap gap-2">
                 <a
                   href={outUrl}
-                  download={`alvoprompt-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                  download={`alvoprompter-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
                   className="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold text-black"
                   style={{ background: 'var(--accent)' }}
                 >
@@ -1190,7 +1190,7 @@ export default function VideoEditor() {
                 </a>
                 <a
                   href={recording.url}
-                  download="alvoprompt-gravacao-original.webm"
+                  download="alvoprompter-gravacao-original.webm"
                   className="rounded-lg border px-4 py-2 text-sm"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
@@ -1263,7 +1263,7 @@ export default function VideoEditor() {
                       <video src={s.url} controls playsInline muted className="mb-1 w-full rounded" />
                       <a
                         href={s.url}
-                        download={`alvoprompt-clipe-${i + 1}.webm`}
+                        download={`alvoprompter-clipe-${i + 1}.webm`}
                         className="block rounded-md px-3 py-1.5 text-center text-xs font-semibold text-black"
                         style={{ background: 'var(--accent)' }}
                       >

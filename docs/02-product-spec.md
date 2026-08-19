@@ -1,4 +1,6 @@
-# PromptFlow — Product Spec (Working Title)
+# AlvoPrompter — Product Spec (Working Title)
+
+> Documento histórico de visão. Para o estado realmente entregue e suas limitações, consulte o README. Itens abaixo não devem ser usados como promessa comercial sem validação no produto.
 
 > "O melhor de Bigvu + Teleprompter Pro + PromptSmart — melhor que todos juntos."
 

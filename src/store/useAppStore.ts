@@ -30,6 +30,7 @@ interface AppState {
   currentScript: Script | null
   settings: PrompterSettings
   loading: boolean
+  loadError: string | null
   aiPanelTab: AiPanelTab | null
   recording: RecordingData | null
   prompterState: PrompterStatus | null
@@ -57,6 +58,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentScript: null,
   settings: DEFAULT_SETTINGS,
   loading: false,
+  loadError: null,
   aiPanelTab: null,
   recording: null,
   prompterState: null,
@@ -67,9 +69,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   })(),
 
   loadScripts: async () => {
-    set({ loading: true })
-    const scripts = await getScripts()
-    set({ scripts, loading: false })
+    set({ loading: true, loadError: null })
+    try {
+      const scripts = await getScripts()
+      set({ scripts })
+    } catch {
+      set({ loadError: 'Não foi possível abrir os roteiros salvos neste dispositivo.' })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   setView: (view) => set({ view }),

@@ -13,14 +13,21 @@ export interface CloudScript {
 }
 
 export function savedSyncPass(): string | null {
-  return localStorage.getItem(PASS_KEY)
+  const current = sessionStorage.getItem(PASS_KEY)
+  if (current) return current
+  const legacy = localStorage.getItem(PASS_KEY)
+  if (!legacy) return null
+  sessionStorage.setItem(PASS_KEY, legacy)
+  localStorage.removeItem(PASS_KEY)
+  return legacy
 }
 
 export function saveSyncPass(pass: string): void {
-  localStorage.setItem(PASS_KEY, pass.trim())
+  sessionStorage.setItem(PASS_KEY, pass.trim())
 }
 
 export function clearSyncPass(): void {
+  sessionStorage.removeItem(PASS_KEY)
   localStorage.removeItem(PASS_KEY)
 }
 

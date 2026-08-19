@@ -430,7 +430,8 @@ export default function AiTwin() {
 
             <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Grave 3–5 amostras da sua voz para criar o clone de voz:
+                Grave referências da sua voz para reutilizar no avatar. Esta versão reproduz a
+                amostra; ela ainda não clona a voz para textos novos:
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 {!recorder ? (
@@ -653,7 +654,7 @@ export default function AiTwin() {
                 <video src={outUrl} controls className="max-h-64 w-full rounded-lg" />
                 <a
                   href={outUrl}
-                  download={`alvoprompt-twin-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
+                  download={`alvoprompter-twin-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
                   className="mt-2 inline-block rounded-lg px-4 py-2 text-sm font-semibold text-black"
                   style={{ background: 'var(--accent)' }}
                 >

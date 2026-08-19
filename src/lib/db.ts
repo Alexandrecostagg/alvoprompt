@@ -11,7 +11,7 @@ export function newScriptKey(): string {
   return newKey('s')
 }
 
-class AlvopromptDB extends Dexie {
+class AlvoPrompterDB extends Dexie {
   scripts!: Table<Script, number>
   posts!: Table<ScheduledPost, number>
   workspaces!: Table<Workspace, number>
@@ -33,7 +33,7 @@ class AlvopromptDB extends Dexie {
   }
 }
 
-export const db = new AlvopromptDB()
+export const db = new AlvoPrompterDB()
 
 export async function getScripts(): Promise<Script[]> {
   return db.scripts.orderBy('updatedAt').reverse().toArray()

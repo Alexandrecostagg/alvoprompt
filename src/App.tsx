@@ -1,37 +1,36 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useAppStore } from './store/useAppStore'
-import ScriptLibrary from './components/library/ScriptLibrary'
-import ScriptEditor from './components/editor/ScriptEditor'
-import PrompterView from './components/prompter/PrompterView'
-import VideoEditor from './components/editor/VideoEditor'
-import ControlRoom from './components/control/ControlRoom'
+import type { View } from './lib/types'
+import BrandMark from './components/BrandMark'
 import SyncControl from './components/SyncControl'
-import SchedulingHub from './components/scheduling/SchedulingHub'
-import WorkspacesPanel from './components/workspace/WorkspacesPanel'
-import AiTwin from './components/aiTwin/AiTwin'
+import type { PlanId } from './lib/plans'
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-2">
-      <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="alvog" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#8B5CF6" />
-            <stop offset="1" stopColor="#22D3EE" />
-          </linearGradient>
-        </defs>
-        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#alvog)" />
-        <g stroke="#fff" strokeLinecap="round" strokeWidth="4.5">
-          <path d="M24 16 17.2 34" />
-          <path d="M24 16 30.8 34" />
-        </g>
-        <rect x="18.4" y="25.6" width="11.2" height="4.6" rx="2.3" fill="#fff" />
-      </svg>
-      <span className="text-lg font-bold tracking-tight text-white">
-        alvo<span style={{ color: 'var(--accent-2)' }}>prompt</span>
-      </span>
-    </div>
-  )
+const ScriptLibrary = lazy(() => import('./components/library/ScriptLibrary'))
+const ScriptEditor = lazy(() => import('./components/editor/ScriptEditor'))
+const PrompterView = lazy(() => import('./components/prompter/PrompterView'))
+const VideoEditor = lazy(() => import('./components/editor/VideoEditor'))
+const ControlRoom = lazy(() => import('./components/control/ControlRoom'))
+const SchedulingHub = lazy(() => import('./components/scheduling/SchedulingHub'))
+const WorkspacesPanel = lazy(() => import('./components/workspace/WorkspacesPanel'))
+const AiTwin = lazy(() => import('./components/aiTwin/AiTwin'))
+const AccountPanel = lazy(() => import('./components/account/AccountPanel'))
+
+type IconName = 'scripts' | 'edit' | 'record' | 'calendar' | 'more' | 'control' | 'team' | 'twin' | 'theme' | 'account'
+
+function Icon({ name, className = 'h-5 w-5' }: { name: IconName; className?: string }) {
+  const paths: Record<IconName, ReactNode> = {
+    scripts: <><path d="M7 4h10a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /><path d="M9 9h6M9 13h6M9 17h4" /></>,
+    edit: <><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
+    record: <><rect x="3" y="5" width="18" height="14" rx="4" /><circle cx="12" cy="12" r="3" /><path d="M8 2h8" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18M8 14h3M13 14h3M8 17h3" /></>,
+    more: <><rect x="4" y="4" width="6" height="6" rx="2" /><rect x="14" y="4" width="6" height="6" rx="2" /><rect x="4" y="14" width="6" height="6" rx="2" /><rect x="14" y="14" width="6" height="6" rx="2" /></>,
+    control: <><rect x="3" y="4" width="18" height="13" rx="3" /><path d="M8 21h8M12 17v4M8 10h3M9.5 8.5v3M15.5 9.5h.01M18 12h.01" /></>,
+    team: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    twin: <><path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3ZM5 14l.8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14ZM18 13l1 2.8 3 1.2-3 1.2L18 21l-1-2.8-3-1.2 3-1.2 1-2.8Z" /></>,
+    theme: <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" />,
+    account: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+  }
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
 function useTheme() {
@@ -45,136 +44,140 @@ function useTheme() {
     localStorage.setItem('alvoprompt-theme', theme)
   }, [theme])
 
-  return { theme, toggleTheme: () => setTheme((t) => (t === 'light' ? 'dark' : 'light')) }
+  return { theme, toggleTheme: () => setTheme((value) => (value === 'light' ? 'dark' : 'light')) }
+}
+
+function LoadingView() {
+  return (
+    <div className="grid min-h-64 place-items-center" aria-label="Carregando tela">
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-transparent border-t-current" style={{ color: 'var(--accent)' }} />
+    </div>
+  )
+}
+
+function DesktopNavButton({ active, disabled, onClick, children }: { active?: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button onClick={onClick} disabled={disabled} className="min-h-10 rounded-xl px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-35" style={{ color: active ? 'var(--brand-strong)' : 'var(--muted)', background: active ? 'var(--accent-soft)' : 'transparent' }}>
+      {children}
+    </button>
+  )
+}
+
+function MobileNavButton({ active, disabled, icon, label, primary, onClick }: { active?: boolean; disabled?: boolean; icon: IconName; label: string; primary?: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} disabled={disabled} aria-current={active ? 'page' : undefined} className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold transition disabled:opacity-35 ${primary ? '-mt-5' : ''}`} style={{ color: active || primary ? 'var(--brand-strong)' : 'var(--muted)' }}>
+      <span className={`grid place-items-center ${primary ? 'h-12 w-12 rounded-2xl text-white shadow-lg' : 'h-6 w-8'}`} style={primary ? { background: 'var(--brand-gradient)', boxShadow: '0 10px 25px rgba(99,102,241,.32)' } : undefined}>
+        <Icon name={icon} className={primary ? 'h-6 w-6' : 'h-5 w-5'} />
+      </span>
+      <span>{label}</span>
+      {active && !primary ? <span className="absolute bottom-0 h-1 w-5 rounded-full" style={{ background: 'var(--brand-gradient)' }} /> : null}
+    </button>
+  )
 }
 
 export default function App() {
-  const view = useAppStore((s) => s.view)
-  const currentScript = useAppStore((s) => s.currentScript)
-  const setView = useAppStore((s) => s.setView)
+  const view = useAppStore((state) => state.view)
+  const currentScript = useAppStore((state) => state.currentScript)
+  const setView = useAppStore((state) => state.setView)
   const { theme, toggleTheme } = useTheme()
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [requestedPlan] = useState<PlanId | null>(() => {
+    const value = new URLSearchParams(window.location.search).get('plan')
+    return value === 'creator' || value === 'studio' ? value : null
+  })
 
   useEffect(() => {
     void useAppStore.getState().loadScripts()
     void useAppStore.getState().refreshWorkspaces()
   }, [])
 
-  if (view === 'prompter') {
+  useEffect(() => {
+    if (requestedPlan) setAccountOpen(true)
+  }, [requestedPlan])
+
+  const navigate = (next: View) => {
+    setMoreOpen(false)
+    setView(next)
+  }
+
+  if (view === 'prompter' || view === 'video-editor' || view === 'control') {
     return (
-      <div className="h-full">
-        <PrompterView />
-      </div>
+      <Suspense fallback={<LoadingView />}>
+        {view === 'prompter' ? <PrompterView /> : null}
+        {view === 'video-editor' ? <VideoEditor /> : null}
+        {view === 'control' ? <ControlRoom /> : null}
+      </Suspense>
     )
   }
 
-  if (view === 'video-editor') {
-    return (
-      <div className="h-full">
-        <VideoEditor />
-      </div>
-    )
-  }
-
-  if (view === 'control') {
-    return (
-      <div className="h-full">
-        <ControlRoom />
-      </div>
-    )
-  }
+  const moreActive = view === 'workspaces' || view === 'ai-twin'
 
   return (
     <div className="flex h-full flex-col">
-      <header
-        className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:px-6"
-        style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
-      >
-        <button onClick={() => setView('library')} className="cursor-pointer">
-          <Logo />
-        </button>
-        <div className="flex flex-wrap items-center gap-1 text-sm">
-          <button
-            onClick={() => setView('library')}
-            className="rounded-lg px-3 py-1.5 transition-colors"
-            style={{
-              background: view === 'library' ? 'var(--panel)' : 'transparent',
-              color: view === 'library' ? 'var(--accent)' : 'var(--muted)',
-              border: `1px solid ${view === 'library' ? 'var(--border)' : 'transparent'}`,
-            }}
-          >
-            Biblioteca
-          </button>
-          <button
-            onClick={() => setView('editor')}
-            disabled={!currentScript}
-            className="rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40"
-            style={{
-              background: view === 'editor' ? 'var(--panel)' : 'transparent',
-              color: view === 'editor' ? 'var(--accent)' : 'var(--muted)',
-              border: `1px solid ${view === 'editor' ? 'var(--border)' : 'transparent'}`,
-            }}
-          >
-            Editor
-          </button>
-          <button
-            onClick={() => setView('control')}
-            className="rounded-lg px-3 py-1.5 transition-colors"
-            style={{ color: 'var(--muted)' }}
-          >
-            🎮 Control Room
-          </button>
-          <button
-            onClick={() => setView('scheduling')}
-            className="rounded-lg px-3 py-1.5 transition-colors"
-            style={{
-              color: view === 'scheduling' ? 'var(--accent)' : 'var(--muted)',
-              background: view === 'scheduling' ? 'var(--panel)' : 'transparent',
-              border: `1px solid ${view === 'scheduling' ? 'var(--border)' : 'transparent'}`,
-            }}
-          >
-            📅 Agendar
-          </button>
-          <button
-            onClick={() => setView('workspaces')}
-            className="rounded-lg px-3 py-1.5 transition-colors"
-            style={{
-              color: view === 'workspaces' ? 'var(--accent)' : 'var(--muted)',
-              background: view === 'workspaces' ? 'var(--panel)' : 'transparent',
-              border: `1px solid ${view === 'workspaces' ? 'var(--border)' : 'transparent'}`,
-            }}
-          >
-            👥 Equipe
-          </button>
-          <button
-            onClick={() => setView('ai-twin')}
-            className="rounded-lg px-3 py-1.5 transition-colors"
-            style={{
-              color: view === 'ai-twin' ? 'var(--accent)' : 'var(--muted)',
-              background: view === 'ai-twin' ? 'var(--panel)' : 'transparent',
-              border: `1px solid ${view === 'ai-twin' ? 'var(--border)' : 'transparent'}`,
-            }}
-          >
-            🤖 AI Twin
-          </button>
-          <button
-            onClick={toggleTheme}
-            className="ml-1 rounded-lg border px-2.5 py-1.5 transition-colors"
-            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
-            title={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
-            aria-label="Alternar tema"
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b px-4 py-2.5 lg:hidden" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--panel) 94%, transparent)' }}>
+        <button onClick={() => navigate('library')} aria-label="Ir para meus roteiros"><BrandMark compact /></button>
+        <div className="flex items-center gap-2"><button onClick={() => setAccountOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Abrir conta e planos"><Icon name="account" /></button><button onClick={() => setMoreOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Abrir menu"><Icon name="more" /></button></div>
+      </header>
+
+      <header className="hidden min-h-16 items-center justify-between border-b px-6 lg:flex" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+        <button onClick={() => navigate('library')} aria-label="Ir para meus roteiros"><BrandMark /></button>
+        <nav className="flex items-center gap-1" aria-label="Navegação principal">
+          <DesktopNavButton active={view === 'library'} onClick={() => navigate('library')}>Roteiros</DesktopNavButton>
+          <DesktopNavButton active={view === 'editor'} disabled={!currentScript} onClick={() => navigate('editor')}>Editor</DesktopNavButton>
+          <DesktopNavButton onClick={() => navigate('control')}>Control Room</DesktopNavButton>
+          <DesktopNavButton active={view === 'scheduling'} onClick={() => navigate('scheduling')}>Agenda</DesktopNavButton>
+          <DesktopNavButton active={view === 'workspaces'} onClick={() => navigate('workspaces')}>Equipe</DesktopNavButton>
+          <DesktopNavButton active={view === 'ai-twin'} onClick={() => navigate('ai-twin')}>AI Twin</DesktopNavButton>
+        </nav>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setAccountOpen(true)} className="flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}><Icon name="account" />Conta</button>
+          <button onClick={toggleTheme} className="grid h-10 w-10 place-items-center rounded-xl border" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}><Icon name="theme" /></button>
           <SyncControl />
         </div>
       </header>
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {view === 'library' ? <ScriptLibrary /> : null}
-        {view === 'editor' ? <ScriptEditor /> : null}
-        {view === 'scheduling' ? <SchedulingHub /> : null}
-        {view === 'workspaces' ? <WorkspacesPanel /> : null}
-        {view === 'ai-twin' ? <AiTwin /> : null}
+
+      <main className="min-h-0 flex-1 overflow-y-auto pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <Suspense fallback={<LoadingView />}>
+          {view === 'library' ? <ScriptLibrary /> : null}
+          {view === 'editor' ? <ScriptEditor /> : null}
+          {view === 'scheduling' ? <SchedulingHub /> : null}
+          {view === 'workspaces' ? <WorkspacesPanel /> : null}
+          {view === 'ai-twin' ? <AiTwin /> : null}
+        </Suspense>
       </main>
+
+      {moreOpen ? (
+        <>
+          <button className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden" onClick={() => setMoreOpen(false)} aria-label="Fechar menu" />
+          <section className="fixed inset-x-3 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-50 rounded-3xl border p-4 shadow-2xl lg:hidden" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }} role="dialog" aria-modal="true" aria-label="Mais ferramentas">
+            <div className="mb-3 flex items-center justify-between">
+              <div><p className="font-bold">Mais ferramentas</p><p className="text-xs" style={{ color: 'var(--muted)' }}>Produção, equipe e preferências</p></div>
+              <button onClick={() => setMoreOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: 'var(--bg)', color: 'var(--muted)' }} aria-label="Fechar">×</button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {([['control', 'Control Room', 'control'], ['team', 'Equipe', 'workspaces'], ['twin', 'AI Twin', 'ai-twin']] as const).map(([icon, label, target]) => (
+                <button key={target} onClick={() => navigate(target)} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 text-xs font-semibold" style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}>
+                  <Icon name={icon} className="h-6 w-6" />{label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <button onClick={toggleTheme} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold" style={{ background: 'var(--bg)', color: 'var(--text)' }}><Icon name="theme" />{theme === 'light' ? 'Modo escuro' : 'Modo claro'}</button>
+              <SyncControl />
+            </div>
+          </section>
+        </>
+      ) : null}
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t px-2 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--panel) 96%, transparent)', boxShadow: '0 -12px 30px rgba(15,23,42,.08)' }} aria-label="Navegação principal">
+        <MobileNavButton icon="scripts" label="Roteiros" active={view === 'library'} onClick={() => navigate('library')} />
+        <MobileNavButton icon="edit" label="Editor" active={view === 'editor'} disabled={!currentScript} onClick={() => navigate('editor')} />
+        <MobileNavButton icon="record" label="Prompter" primary disabled={!currentScript} onClick={() => navigate('prompter')} />
+        <MobileNavButton icon="calendar" label="Agenda" active={view === 'scheduling'} onClick={() => navigate('scheduling')} />
+        <MobileNavButton icon="more" label="Mais" active={moreActive} onClick={() => setMoreOpen(true)} />
+      </nav>
+      <Suspense fallback={null}><AccountPanel open={accountOpen} initialPlan={requestedPlan} onClose={() => setAccountOpen(false)} /></Suspense>
     </div>
   )
 }

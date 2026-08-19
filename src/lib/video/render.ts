@@ -341,7 +341,7 @@ function drawBrandCard(
     ctx.fillText(lines[i]!, w / 2, y)
   }
 
-  const sub = mode === 'intro' ? 'Seu texto no alvo, seus olhos na câmera.' : 'Obrigado por assistir!'
+  const sub = mode === 'intro' ? 'Seu roteiro no alvo. Seu olhar na câmera.' : 'Obrigado por assistir!'
   ctx.font = `${Math.round(fontSize * 0.4)}px system-ui, -apple-system, sans-serif`
   ctx.strokeStyle = 'rgba(0,0,0,0.2)'
   ctx.lineWidth = 1

@@ -1,5 +1,7 @@
 # Análise de Competidores — Ronda 2: Descript, OpusClip, Opticue, Teleprompter.com
 
+> Pesquisa de referência de produto. Confirme preços e funcionalidades nas fontes oficiais antes de reutilizar estes dados publicamente.
+
 > Pesquisa realizada em 16/08/2026 (sites oficiais: descript.com, opus.pro, teleprompter.com)
 
 ---
@@ -41,7 +43,7 @@
 4. Curva de aprendizado (conceito de documento≠timeline)
 
 ### O que copiar/estudar
-- **Eye Contact** (IA de olhar) → roadmap do Alvoprompt; estudar a promessa de venda ("sem retakes")
+- **Eye Contact** (IA de olhar) → roadmap do AlvoPrompter; estudar a promessa de venda ("sem retakes")
 - **Regenerate Speech / cobrir cortes** → fecha a lacuna de qualidade ao remover silêncios/pausas
 - **Edit for Clarity + Shorten Word Gaps** → valida nosso corte de pausas automático (já temos por RMS)
 - **Brand Studio + Create Clips** → templates de marca e "1 vídeo → N clipes"
@@ -164,7 +166,7 @@
 
 ## 5. Síntese Comparativa
 
-| Capability | Descript | OpusClip | Opticue | Teleprompter.com | **Alvoprompt** |
+| Capability | Descript | OpusClip | Opticue | Teleprompter.com | **AlvoPrompter** |
 |---|---|---|---|---|---|
 | Teleprompter core | ❌ | ❌ | ✅✅ (UX) | ✅✅ (VoiceGlide) | ✅✅ (VoiceTrack c/ paráfrase) |
 | Câmera + texto na mesma tela | ❌ | ❌ | ✅ | ✅ (4K) | ✅ (nativa) |
@@ -180,7 +182,7 @@
 | PT-BR first | ❌ | ❌ | ❌ | ❌ | ✅✅ |
 | Sem hardware / sem custo de crédito | — | — | exige rig $$ | free c/ marca | ✅✅ |
 
-### Os 4 maiores gaps (oportunidades para o Alvoprompt)
+### Os 4 maiores gaps (oportunidades para o AlvoPrompter)
 1. **Ninguém fecha o ciclo inteiro local**: prompter → gravação → edição IA → clipes → publicação. Descript é IA sem prompter; teleprompter.com é prompter sem IA editor; OpusClip só clipa; Opticue só lê.
 2. **Offline/privacidade é nosso fosso** — todos os concorrentes relevantes são cloud (envio de vídeo/áudio para servidores).
 3. **Eye Contact e Dublagem têm demanda provada** (feature premium da Descript) — é exatamente nosso roadmap da Fase 3/4.

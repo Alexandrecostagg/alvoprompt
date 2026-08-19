@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <title>Alvoprompt — Seu texto no alvo, seus olhos na câmera</title>
+    <title>AlvoPrompter — Seu roteiro no alvo. Seu olhar na câmera.</title>
     <meta
       name="description"
-      content="Teleprompter com IA que segue a sua fala. VoiceTrack, câmera + gravação nativa, legendas e editor de vídeo — 100% offline, PT-BR first, sem assinatura pesada."
+      content="Teleprompter PT-BR com VoiceTrack, câmera, gravação, legendas e edição. Seu roteiro no alvo. Seu olhar na câmera."
     />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -213,19 +213,8 @@
     <header class="sticky top-0 z-50 border-b border-black/5 bg-[#f6f7fb]/80 backdrop-blur-xl">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <a href="#top" class="flex items-center gap-2.5">
-          <svg width="34" height="34" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="alvologo" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#8B5CF6" /><stop offset="1" stop-color="#06B6D4" />
-              </linearGradient>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#alvologo)" />
-            <g stroke="#fff" stroke-linecap="round" stroke-width="4.5">
-              <path d="M24 16 17.2 34" /><path d="M24 16 30.8 34" />
-            </g>
-            <rect x="18.4" y="25.6" width="11.2" height="4.6" rx="2.3" fill="#fff" />
-          </svg>
-          <span class="text-lg font-bold tracking-tight text-slate-900">alvoprompt</span>
+          <img src="favicon.svg" width="36" height="36" alt="" />
+          <span class="text-lg font-bold tracking-tight text-slate-900">Alvo<span class="grad-text">Prompter</span></span>
         </a>
         <nav class="hidden items-center gap-7 text-sm font-medium text-slate-500 md:flex" id="navLinks">
           <a href="#app" class="nav-link transition-colors hover:text-slate-900">O app</a>
@@ -235,7 +224,7 @@
           <a href="#faq" class="nav-link transition-colors hover:text-slate-900">FAQ</a>
         </nav>
         <div class="flex items-center gap-3">
-          <a href="#precos" class="js-app btn-primary hidden rounded-lg px-4 py-2 text-sm sm:inline-flex">Abrir o app</a>
+          <a href="/" class="js-app btn-primary hidden rounded-lg px-4 py-2 text-sm sm:inline-flex">Começar grátis</a>
           <button id="menuBtn" class="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 md:hidden" aria-label="Abrir menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
           </button>
@@ -248,7 +237,7 @@
           <a href="#comparativo" class="mobile-link py-1">Comparativo</a>
           <a href="#precos" class="mobile-link py-1">Preços</a>
           <a href="#faq" class="mobile-link py-1">FAQ</a>
-          <a href="#precos" class="js-app btn-primary mt-2 rounded-lg px-4 py-2.5 text-center">Abrir o app</a>
+          <a href="/" class="js-app btn-primary mt-2 rounded-lg px-4 py-2.5 text-center">Começar grátis</a>
         </div>
       </div>
     </header>
@@ -263,21 +252,20 @@
       <div class="relative mx-auto max-w-7xl px-6 pb-20 pt-16 text-center sm:pt-20">
         <span class="chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold">
           <span class="pulse h-2 w-2 rounded-full bg-emerald-500"></span>
-          PT-BR first · core 100% offline · PWA instalável
+          Feito primeiro para PT-BR · PWA instalável · roteiros locais
         </span>
         <h1 class="mx-auto mt-7 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-6xl">
-          Seu texto no alvo,<br />
-          seus olhos na <span class="grad-text">câmera</span>.
+          Seu roteiro no alvo.<br />
+          Seu olhar na <span class="grad-text">câmera</span>.
         </h1>
         <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500">
-          O melhor do <span class="font-semibold text-slate-900">BIGVU</span>,
+          Um estúdio de bolso inspirado nos melhores fluxos do <span class="font-semibold text-slate-900">BIGVU</span>,
           <span class="font-semibold text-slate-900">Teleprompter Pro</span> e
-          <span class="font-semibold text-slate-900">PromptSmart</span> em um só estúdio de bolso. Teleprompter com
-          <span class="grad-text font-bold">VoiceTrack</span> que segue a sua fala, câmera + gravação nativa e
-          editor de vídeo com IA — sem assinatura pesada e com privacidade de verdade.
+          <span class="font-semibold text-slate-900">PromptSmart</span>. O <span class="grad-text font-bold">VoiceTrack</span>
+          acompanha sua fala, enquanto câmera, gravação e roteiro permanecem juntos na mesma tela.
         </p>
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href="#precos" class="js-app btn-primary rounded-xl px-7 py-3.5 text-base">Testar grátis</a>
+          <a href="/" class="js-app btn-primary rounded-xl px-7 py-3.5 text-base">Começar grátis</a>
           <a
             href="#app"
             class="group inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-slate-900 transition-colors hover:bg-slate-50"
@@ -286,7 +274,7 @@
             <svg class="transition-transform group-hover:translate-y-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </a>
         </div>
-        <p class="mt-4 text-xs text-slate-400">Sem cartão de crédito · Gratuito para sempre</p>
+        <p class="mt-4 text-xs text-slate-400">Plano grátis sem cartão · dados locais por padrão · planos pagos via Asaas</p>
 
         <!-- Carrossel principal -->
         <div class="mx-auto mt-14 max-w-4xl" data-carousel>
@@ -297,16 +285,16 @@
               <span class="frame-dot bg-emerald-400"></span>
               <span class="ml-3 flex items-center gap-2 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
-                <span data-carousel-label>alvoprompt — prompter</span>
+                <span data-carousel-label>AlvoPrompter — prompter</span>
               </span>
             </div>
             <div class="relative overflow-hidden">
               <div class="carousel-track" data-carousel-track>
-                <img src="img/app-prompter.png" alt="Prompter do Alvoprompt em tela cheia com o texto acompanhando a fala" class="w-full shrink-0" />
-                <img src="img/app-editor.png" alt="Editor de roteiro do Alvoprompt" class="w-full shrink-0" />
-                <img src="img/app-ia-panel.png" alt="Painel de IA do editor do Alvoprompt" class="w-full shrink-0" />
-                <img src="img/app-analise.png" alt="Painel de análise de roteiro do Alvoprompt" class="w-full shrink-0" />
-                <img src="img/app-controlroom.png" alt="Web Control Room do Alvoprompt" class="w-full shrink-0" />
+                <img src="img/app-prompter.png" alt="Prompter do AlvoPrompter em tela cheia com o texto acompanhando a fala" class="w-full shrink-0" />
+                <img src="img/app-editor.png" alt="Editor de roteiro do AlvoPrompter" class="w-full shrink-0" />
+                <img src="img/app-ia-panel.png" alt="Painel de IA do editor do AlvoPrompter" class="w-full shrink-0" />
+                <img src="img/app-analise.png" alt="Painel de análise de roteiro do AlvoPrompter" class="w-full shrink-0" />
+                <img src="img/app-controlroom.png" alt="Web Control Room do AlvoPrompter" class="w-full shrink-0" />
               </div>
             </div>
           </div>
@@ -353,12 +341,12 @@
     <section class="mx-auto max-w-6xl px-6 py-16">
       <div class="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
         <div class="reveal">
-          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="100">0</span>%</span>
-          <span class="mt-1 block text-sm text-slate-500">offline-first</span>
+          <span class="block text-4xl font-extrabold text-slate-900">Local</span>
+          <span class="mt-1 block text-sm text-slate-500">roteiros e gravações por padrão</span>
         </div>
         <div class="reveal" style="transition-delay:.05s">
-          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="0">0</span></span>
-          <span class="mt-1 block text-sm text-slate-500">dados coletados ou vendidos</span>
+          <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="90">0</span> dias</span>
+          <span class="mt-1 block text-sm text-slate-500">retenção máxima do sync</span>
         </div>
         <div class="reveal" style="transition-delay:.1s">
           <span class="block text-4xl font-extrabold text-slate-900"><span class="counter" data-target="70">0</span>+</span>
@@ -366,7 +354,7 @@
         </div>
         <div class="reveal" style="transition-delay:.15s">
           <span class="grad-text block text-4xl font-extrabold">PT-BR</span>
-          <span class="mt-1 block text-sm text-slate-500">reconhecimento nativo</span>
+          <span class="mt-1 block text-sm text-slate-500">interface e experiência primeiro</span>
         </div>
       </div>
     </section>
@@ -379,7 +367,7 @@
           Do roteiro ao vídeo pronto, <span class="grad-text">sem trocar de app</span>
         </h2>
         <p class="mt-4 text-slate-500">
-          Biblioteca, editor, prompter e control room: tudo em uma interface limpa que funciona até no modo avião.
+          Biblioteca, editor, prompter e control room em uma interface única. Roteiros e gravação continuam locais; IA e sincronização são opcionais.
         </p>
       </div>
 
@@ -400,7 +388,7 @@
               <span class="frame-dot bg-emerald-400"></span>
               <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Prompter</span>
             </div>
-            <img src="img/app-prompter.png" alt="Prompter do Alvoprompt em tela cheia" class="block w-full" />
+            <img src="img/app-prompter.png" alt="Prompter do AlvoPrompter em tela cheia" class="block w-full" />
           </div>
           <div>
             <h3 class="text-2xl font-bold text-slate-900">Prompter que se adapta a você</h3>
@@ -443,7 +431,7 @@
               <span class="frame-dot bg-emerald-400"></span>
               <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Editor</span>
             </div>
-            <img src="img/app-editor.png" alt="Editor de roteiro do Alvoprompt" class="block w-full" />
+            <img src="img/app-editor.png" alt="Editor de roteiro do AlvoPrompter" class="block w-full" />
           </div>
         </div>
 
@@ -456,7 +444,7 @@
               <span class="frame-dot bg-emerald-400"></span>
               <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">✨ Painel de IA</span>
             </div>
-            <img src="img/app-ia-panel.png" alt="Painel de IA do editor do Alvoprompt" class="block w-full" />
+            <img src="img/app-ia-panel.png" alt="Painel de IA do editor do AlvoPrompter" class="block w-full" />
           </div>
           <div>
             <h3 class="text-2xl font-bold text-slate-900">IA que trabalha com você, não por cima</h3>
@@ -499,7 +487,7 @@
               <span class="frame-dot bg-emerald-400"></span>
               <span class="ml-3 rounded-md bg-slate-100 px-3 py-0.5 text-[11px] text-slate-500">Control Room</span>
             </div>
-            <img src="img/app-controlroom.png" alt="Web Control Room do Alvoprompt" class="block w-full" />
+            <img src="img/app-controlroom.png" alt="Web Control Room do AlvoPrompter" class="block w-full" />
           </div>
         </div>
       </div>
@@ -512,7 +500,7 @@
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Um estúdio de vídeo <span class="grad-text">de bolso</span>
         </h2>
-        <p class="mt-4 text-slate-500">Do roteiro à publicação: tudo em um lugar, funcionando até no modo avião.</p>
+        <p class="mt-4 text-slate-500">Do roteiro à exportação: ferramentas locais e serviços de nuvem claramente identificados.</p>
       </div>
 
       <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -523,7 +511,7 @@
           <h3 class="mt-4 text-lg font-bold text-slate-900">VoiceTrack</h3>
           <p class="mt-1.5 text-sm text-slate-500">
             O texto rola enquanto você fala, para quando pausa e retoma sozinho — com tolerância a paráfrase e
-            sensibilidade ajustável. O <span class="font-semibold text-slate-700">único</span> que acompanha você até quando você improvisa.
+            sensibilidade ajustável para acompanhar pequenas variações durante a leitura.
           </p>
         </div>
         <div class="bento card card-hover rounded-2xl p-6">
@@ -574,8 +562,8 @@
           </div>
           <h3 class="mt-4 text-lg font-bold text-slate-900">Privacidade e offline</h3>
           <p class="mt-1.5 text-sm text-slate-500">
-            Core 100% local: biblioteca no dispositivo, reconhecimento de fala on-device e nada vendido a terceiros.
-            Seus roteiros são seus — até no modo avião.
+            Biblioteca e gravações ficam no dispositivo por padrão. VoiceTrack e recursos de IA podem depender
+            do navegador ou da nuvem; cada envio é descrito antes do uso.
           </p>
         </div>
       </div>
@@ -628,7 +616,7 @@
           Feito para quem fala olhando para a câmera
         </h2>
         <p class="mt-4 text-slate-500">
-          Se você precisa falar com naturalidade em frente à câmera, o Alvoprompt foi desenhado para você.
+          Se você precisa falar com naturalidade em frente à câmera, o AlvoPrompter foi desenhado para você.
         </p>
       </div>
       <div class="reveal mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -661,10 +649,10 @@
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Posicionamento</span>
           <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            O melhor dos três, sem os defeitos dos três
+            Três referências, uma experiência própria
           </h2>
           <p class="mt-4 text-slate-500">
-            Analisamos a fundo os apps mais usados do mercado para fazer um só que entrega o que importa.
+            Estudamos os fluxos que funcionam em cada referência e desenhamos uma experiência própria para PT-BR.
           </p>
         </div>
         <div class="reveal mt-12 grid gap-5 md:grid-cols-3">
@@ -699,10 +687,10 @@
         <div class="card relative mt-6 overflow-hidden rounded-2xl p-8 text-center">
           <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-violet-100 via-indigo-50 to-cyan-100 opacity-70" aria-hidden="true"></div>
           <div class="relative">
-            <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Alvoprompt</p>
+            <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">AlvoPrompter</p>
             <p class="mx-auto mt-3 max-w-3xl text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl">
               VoiceTrack <span class="grad-text">com tolerância a paráfrase</span> · câmera + gravação nativa ·
-              editor de vídeo com IA · preço transparente · <span class="text-slate-900">100% offline</span>
+              editor de vídeo · beta transparente · <span class="text-slate-900">dados locais por padrão</span>
             </p>
           </div>
         </div>
@@ -710,7 +698,7 @@
     </section>
 
     <!-- DEPOIMENTOS (CARROSSEL AUTO) -->
-    <section id="depoimentos" class="mx-auto max-w-6xl px-6 py-20">
+    <section id="depoimentos" class="hidden" aria-hidden="true">
       <div class="reveal mx-auto max-w-2xl text-center">
         <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Quem usa</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -738,7 +726,7 @@
           <div class="card w-[340px] shrink-0 rounded-2xl p-6">
             <div class="flex text-amber-400">★★★★★</div>
             <p class="mt-3 text-sm leading-relaxed text-slate-600">
-              "Gravo resposta a lead todos os dias. Com o Alvoprompt o vídeo sai em 10 minutos, já cortado e com
+              "Gravo resposta a lead todos os dias. Com o AlvoPrompter o vídeo sai em 10 minutos, já cortado e com
               legenda pronta."
             </p>
             <div class="mt-5 flex items-center gap-3">
@@ -820,7 +808,7 @@
           <div class="card w-[340px] shrink-0 rounded-2xl p-6" aria-hidden="true">
             <div class="flex text-amber-400">★★★★★</div>
             <p class="mt-3 text-sm leading-relaxed text-slate-600">
-              "Gravo resposta a lead todos os dias. Com o Alvoprompt o vídeo sai em 10 minutos, já cortado e com
+              "Gravo resposta a lead todos os dias. Com o AlvoPrompter o vídeo sai em 10 minutos, já cortado e com
               legenda pronta."
             </p>
             <div class="mt-5 flex items-center gap-3">
@@ -841,7 +829,7 @@
         <div class="reveal mx-auto max-w-2xl text-center">
           <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Comparativo</span>
           <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Por que o <span class="grad-text">Alvoprompt</span>?
+            Por que o <span class="grad-text">AlvoPrompter</span>?
           </h2>
         </div>
         <div class="reveal mt-12 overflow-x-auto rounded-2xl">
@@ -852,7 +840,7 @@
                 <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">BIGVU</th>
                 <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">Teleprompter Pro</th>
                 <th class="border border-slate-200 bg-slate-50 px-4 py-3 text-center font-semibold">PromptSmart+</th>
-                <th class="col-alvo rounded-tr-xl border border-indigo-300 px-4 py-3 text-center font-bold text-indigo-700">Alvoprompt</th>
+                <th class="col-alvo rounded-tr-xl border border-indigo-300 px-4 py-3 text-center font-bold text-indigo-700">AlvoPrompter</th>
               </tr>
             </thead>
             <tbody class="text-center text-slate-500">
@@ -866,7 +854,7 @@
               <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Editor IA (corte, reframe, green screen)</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
               <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Modo espelho (hardware)</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅</td></tr>
               <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Web Control Room</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-indigo-700">✅ sem servidor</td></tr>
-              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Preço transparente</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="border border-slate-200 px-4 py-3">✅</td><td class="border border-slate-200 px-4 py-3 text-red-500">✕</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">✅✅ free + única</td></tr>
+              <tr><td class="border border-slate-200 px-4 py-3 text-left font-medium text-slate-900">Acesso atual</td><td class="border border-slate-200 px-4 py-3">Assinatura</td><td class="border border-slate-200 px-4 py-3">Compra</td><td class="border border-slate-200 px-4 py-3">Assinatura</td><td class="col-alvo border border-indigo-300 px-4 py-3 font-semibold text-cyan-700">Grátis ou assinatura</td></tr>
             </tbody>
           </table>
         </div>
@@ -876,68 +864,58 @@
     <!-- PREÇOS -->
     <section id="precos" class="mx-auto max-w-6xl px-6 py-20">
       <div class="reveal mx-auto max-w-2xl text-center">
-        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Preços</span>
+        <span class="chip rounded-full px-4 py-1.5 text-xs font-semibold">Planos</span>
         <h2 class="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Sem pegadinha, sem <span class="grad-text">"teste grátis" forçado</span>
+          Comece grátis. Assine quando <span class="grad-text">a produção crescer</span>
         </h2>
         <p class="mt-4 text-slate-500">
-          Free para sempre, compra única para os que odeiam assinatura e Studio para quem quer IA completa.
-          Cancele em um toque, quando quiser.
+          Cobrança mensal recorrente pelo checkout seguro do Asaas. O plano só é liberado após a confirmação do pagamento.
         </p>
 
-        <div class="mt-8 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm font-semibold">
-          <button id="billingMonthly" class="rounded-full px-4 py-1.5 transition-colors">Mensal</button>
-          <button id="billingAnnual" class="rounded-full px-4 py-1.5 text-slate-400 transition-colors">Anual</button>
-          <span class="chip rounded-full px-3 py-1 text-[11px] font-bold">2 meses grátis</span>
-        </div>
       </div>
 
-      <div class="reveal mt-14 grid gap-6 md:grid-cols-3">
-        <div class="card card-hover rounded-2xl p-6">
-          <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Free</p>
-          <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 0</p>
-          <p class="mt-1 text-xs text-slate-400">para sempre, sem cartão</p>
-          <ul class="mt-4 space-y-2 text-sm text-slate-500">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter completo + VoiceTrack (offline)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Textos ilimitados na biblioteca</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação HD até 10 min (1080p)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Modo espelho e modo selfie</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA para experimentar</li>
+      <div class="reveal mt-12 grid gap-6 md:grid-cols-3">
+        <article class="card card-hover flex flex-col rounded-3xl p-6">
+          <p class="text-sm font-bold uppercase tracking-widest text-slate-400">Grátis</p>
+          <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 0</p>
+          <p class="mt-2 text-sm text-slate-500">Para experimentar sem cartão.</p>
+          <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Prompter e VoiceTrack</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Roteiros salvos localmente</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação e modo espelho</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 10 ações de IA por mês</li>
           </ul>
-          <a href="#" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Começar grátis</a>
-        </div>
+          <a href="/" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Começar grátis</a>
+        </article>
 
-        <div class="relative rounded-2xl border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white p-6 shadow-xl shadow-indigo-500/15">
-          <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold">MAIS POPULAR</span>
-          <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Pro</p>
-          <p class="mt-2 text-4xl font-extrabold text-slate-900">R$ 149</p>
-          <p class="mt-1 text-xs text-slate-400">compra única · pague uma vez e fica seu</p>
-          <ul class="mt-4 space-y-2 text-sm text-slate-500">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sem marca d'água</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Gravação 4K e tempo ilimitado</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Import multi-formato (PDF, áudio, links)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor básico de vídeo</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Créditos de IA todo mês</li>
+        <article class="relative flex flex-col rounded-3xl border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white p-6 shadow-xl shadow-indigo-500/15">
+          <span class="chip absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold">MAIS ESCOLHIDO</span>
+          <p class="text-sm font-bold uppercase tracking-widest text-indigo-600">Criador</p>
+          <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 29,90<span class="text-base font-medium text-slate-400">/mês</span></p>
+          <p class="mt-2 text-sm text-slate-500">Para quem publica com frequência.</p>
+          <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do plano Grátis</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Sincronização em nuvem</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> 100 ações de IA por mês</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Roteiros sem limite</li>
           </ul>
-          <a href="#" class="btn-primary mt-8 block rounded-xl py-3 text-center text-sm">Comprar agora</a>
-        </div>
+          <a href="/?plan=creator" data-app-path="?plan=creator" class="js-app btn-primary mt-8 block rounded-xl py-3 text-center text-sm">Assinar Criador</a>
+        </article>
 
-        <div class="card card-hover rounded-2xl p-6">
-          <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Studio</p>
-          <p class="mt-2 text-4xl font-extrabold text-slate-900">
-            <span data-price-studio>R$ 29</span><span class="text-base font-medium text-slate-400">/mês</span>
-          </p>
-          <p class="mt-1 text-xs text-slate-400" data-price-note>ou R$ 249/ano (2 meses grátis)</p>
-          <ul class="mt-4 space-y-2 text-sm text-slate-500">
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do Pro</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Editor IA completo (eye contact, B-roll, dublagem)</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Legendas e tradução 70+ idiomas</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> Agendamento multi-canal e times</li>
-            <li class="flex gap-2"><span class="tick font-bold">✓</span> 7 dias grátis · cancelamento em 1 toque</li>
+        <article class="card card-hover flex flex-col rounded-3xl p-6">
+          <p class="text-sm font-bold uppercase tracking-widest text-slate-400">Studio</p>
+          <p class="mt-3 text-4xl font-extrabold text-slate-900">R$ 79,90<span class="text-base font-medium text-slate-400">/mês</span></p>
+          <p class="mt-2 text-sm text-slate-500">Para marcas e pequenas equipes.</p>
+          <ul class="mt-6 flex-1 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Tudo do plano Criador</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Até 5 membros</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Papéis e permissões (RBAC)</li>
+            <li class="flex gap-2"><span class="tick font-bold">✓</span> Brand kit e 300 ações de IA/mês</li>
           </ul>
-          <a href="#" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50">Testar 7 dias grátis</a>
-        </div>
+          <a href="/?plan=studio" data-app-path="?plan=studio" class="js-app mt-8 block rounded-xl border border-slate-300 bg-white py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Assinar Studio</a>
+        </article>
       </div>
+
     </section>
 
     <!-- FAQ -->
@@ -953,8 +931,8 @@
             <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
-            Não. O core (prompter, VoiceTrack e gravação) funciona 100% offline, até no modo avião. Só os
-            recursos de IA em nuvem (geração de roteiro, dublagem, avatares) precisam de conexão.
+            Roteiros, prompter e gravação funcionam localmente. O VoiceTrack depende do serviço de reconhecimento
+            disponível no navegador e pode exigir internet. Geração de texto, tradução, transcrição e avatares usam nuvem.
           </p>
         </details>
         <details class="card rounded-xl px-5 py-4">
@@ -973,8 +951,8 @@
             <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
-            O reconhecimento de voz acontece no seu dispositivo e seus roteiros ficam na sua biblioteca local.
-            Não vendemos dados e nada é coletado sem você escolher usar os recursos de nuvem.
+            Seus roteiros ficam na biblioteca local por padrão. Ao escolher IA ou sincronização, somente os dados
+            necessários são enviados aos provedores descritos na Política de Privacidade. Não vendemos dados.
           </p>
         </details>
         <details class="card rounded-xl px-5 py-4">
@@ -983,8 +961,8 @@
             <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
           </summary>
           <p class="mt-3 text-sm text-slate-500">
-            Sim, PT-BR nativo — e ao contrário do PromptSmart, ele tolera paráfrase: você pode reformular a
-            frase que a rolagem continua te acompanhando.
+            Sim, a configuração padrão é PT-BR. O motor procura palavras próximas à posição atual e aceita
+            pequenas variações de fala; a precisão depende do reconhecimento oferecido pelo navegador.
           </p>
         </details>
         <details class="card rounded-xl px-5 py-4">
@@ -995,16 +973,6 @@
           <p class="mt-3 text-sm text-slate-500">
             .txt, .md, .docx, PDF, áudio (transcrição automática) e links — incluindo YouTube (legendas) e
             Google Docs. Também dá para colar texto direto.
-          </p>
-        </details>
-        <details class="card rounded-xl px-5 py-4">
-          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Posso cancelar a qualquer momento?
-            <span class="chev text-2xl font-light leading-none text-slate-400">+</span>
-          </summary>
-          <p class="mt-3 text-sm text-slate-500">
-            Sim, em um toque e direto no app. Sem ligação, sem formulário, sem pegadinha — o Pro nem é
-            assinatura, é compra única.
           </p>
         </details>
       </div>
@@ -1020,11 +988,11 @@
           Pronto para <span class="grad-text">olhar na câmera</span><br />e esquecer o texto?
         </h2>
         <p class="mx-auto mt-5 max-w-xl text-lg text-slate-400">
-          Comece grátis agora. Seus primeiros vídeos saem em menos de 5 minutos — sem cartão, sem burocracia.
+          Experimente o fluxo completo de roteiro, prompter e gravação — sem cartão e com dados locais por padrão.
         </p>
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href="#" class="js-app btn-primary rounded-xl px-8 py-4 text-base">Criar minha conta grátis</a>
-          <a href="#" class="js-app rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/10">Instalar o app</a>
+          <a href="/" class="js-app btn-primary rounded-xl px-8 py-4 text-base">Começar grátis</a>
+          <a href="#app" class="rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/10">Ver o produto</a>
         </div>
         <div class="mt-7 flex items-center justify-center gap-6 text-xs text-slate-400">
           <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> PWA instalável</span>
@@ -1038,25 +1006,15 @@
     <footer class="border-t border-white/10 bg-slate-950 py-12">
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 text-sm text-slate-400 sm:flex-row">
         <div class="flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="alvof" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#8B5CF6" /><stop offset="1" stop-color="#06B6D4" />
-              </linearGradient>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#alvof)" />
-            <g stroke="#fff" stroke-linecap="round" stroke-width="4.5">
-              <path d="M24 16 17.2 34" /><path d="M24 16 30.8 34" />
-            </g>
-          </svg>
-          <span class="font-semibold text-white">alvoprompt</span>
+          <img src="favicon.svg" width="24" height="24" alt="" />
+          <span class="font-semibold text-white">AlvoPrompter</span>
         </div>
-        <p>Seu texto no alvo, seus olhos na câmera.</p>
+        <p>Seu roteiro no alvo. Seu olhar na câmera.</p>
         <div class="flex items-center gap-5">
           <a href="https://github.com/Alexandrecostagg/alvoprompt" target="_blank" rel="noopener" class="transition-colors hover:text-white" aria-label="GitHub">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-1.97c-3.2.7-3.87-1.54-3.87-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.19-3.07-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.07 0 4.4-2.68 5.37-5.24 5.65.41.35.77 1.05.77 2.12v3.15c0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
           </a>
-          <a href="#" class="transition-colors hover:text-white">Termos</a>
+          <span title="Documento em preparação">Termos em preparação</span>
           <a href="https://alvoprompt-privacy.alexandrecostagg.workers.dev" target="_blank" rel="noopener" class="transition-colors hover:text-white">Privacidade</a>
           <a href="mailto:alexandrecostagg@gmail.com" class="transition-colors hover:text-white">Contato</a>
         </div>
@@ -1069,9 +1027,10 @@
     </button>
 
     <script>
-      const APP_URL = "https://some-civic-signature-partially.trycloudflare.com";
+      const APP_URL = "/";
       document.querySelectorAll(".js-app").forEach((a) => {
-        a.href = APP_URL;
+        const path = a.dataset.appPath || "";
+        a.href = APP_URL.replace(/\/$/, "/") + path.replace(/^\//, "");
         a.target = "_blank";
         a.rel = "noopener";
       });
@@ -1152,7 +1111,7 @@
         const label = carousel.querySelector("[data-carousel-label]");
         const dotsWrap = carousel.querySelector("[data-carousel-dots]");
         const slides = Array.from(track.children);
-        const labels = ["alvoprompt — prompter", "alvoprompt — editor", "alvoprompt — painel de IA", "alvoprompt — análise", "alvoprompt — control room"];
+        const labels = ["AlvoPrompter — prompter", "AlvoPrompter — editor", "AlvoPrompter — painel de IA", "AlvoPrompter — análise", "AlvoPrompter — control room"];
         let idx = 0;
         let timer;
 
@@ -1191,27 +1150,6 @@
         });
       });
 
-      /* Billing toggle */
-      const monthly = document.getElementById("billingMonthly");
-      const annual = document.getElementById("billingAnnual");
-      const priceStudio = document.querySelector("[data-price-studio]");
-      const priceNote = document.querySelector("[data-price-note]");
-      const setBilling = (annualMode) => {
-        monthly.classList.toggle("btn-primary", !annualMode);
-        annual.classList.toggle("btn-primary", annualMode);
-        monthly.classList.toggle("text-slate-400", annualMode);
-        annual.classList.toggle("text-slate-400", !annualMode);
-        if (annualMode) {
-          priceStudio.innerHTML = "R$ 249<span class='text-base font-medium text-slate-400'>/ano</span>";
-          priceNote.textContent = "equivalente a R$ 20,75/mês";
-        } else {
-          priceStudio.innerHTML = "R$ 29<span class='text-base font-medium text-slate-400'>/mês</span>";
-          priceNote.textContent = "ou R$ 249/ano (2 meses grátis)";
-        }
-      };
-      monthly.addEventListener("click", () => setBilling(false));
-      annual.addEventListener("click", () => setBilling(true));
-      setBilling(false);
     </script>
   </body>
 </html>

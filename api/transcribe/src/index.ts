@@ -1,5 +1,5 @@
 /**
- * Alvoprompt API — Cloudflare Worker com Workers AI (plano gratuito).
+ * AlvoPrompter API — Cloudflare Worker com Workers AI (plano gratuito).
  *
  * Endpoints:
  *   POST /transcribe  multipart: audio=<arquivo>, lang=<código ISO>  → { result: { text, words } }
@@ -15,18 +15,64 @@
  * Uso local:  npx wrangler dev --port 8787
  * Publicar:   npx wrangler deploy
  */
+import { authorizeAiAction, handleSaaSRequest, type SaaSEnv } from './saas'
+
 export interface Env {
   AI: {
     run(model: string, input: unknown): Promise<unknown>
   }
   alvoprompt_media: R2Bucket
   ALVOPROMPT_SYNC: KVNamespace
+  CORS_ORIGIN?: string
+  DEEPSEEK_API_KEY?: string
+  DB?: D1Database
+  FIREBASE_PROJECT_ID?: string
+  ASAAS_API_KEY?: string
+  ASAAS_API_BASE?: string
+  ASAAS_WEBHOOK_TOKEN?: string
+  APP_URL?: string
 }
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-sync-pass',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-sync-pass',
+}
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+const MAX_MEDIA_BYTES = 100 * 1024 * 1024
+const MIN_SYNC_PASS_LENGTH = 12
+
+function allowedOrigin(request: Request, env: Env): boolean {
+  const origin = request.headers.get('Origin')
+  if (!origin) return true
+  const allowed = (env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  return allowed.includes(origin)
+}
+
+async function enforceRateLimit(
+  request: Request,
+  env: Env,
+  bucket: string,
+  dailyLimit: number,
+): Promise<Response | null> {
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'local'
+  const day = new Date().toISOString().slice(0, 10)
+  const key = `rate:${bucket}:${day}:${ip}`
+  const count = Number((await env.ALVOPROMPT_SYNC.get(key)) ?? '0')
+  if (count >= dailyLimit) {
+    return json({ error: 'Limite diário atingido. Tente novamente amanhã.' }, 429)
+  }
+  await env.ALVOPROMPT_SYNC.put(key, String(count + 1), { expirationTtl: 60 * 60 * 25 })
+  return null
+}
+
+function requestTooLarge(request: Request, maxBytes: number): boolean {
+  const size = Number(request.headers.get('Content-Length') ?? '0')
+  return Number.isFinite(size) && size > maxBytes
 }
 
 function json(body: unknown, status = 200): Response {
@@ -73,8 +119,8 @@ async function handleCollection(
   sanitize: (rec: Record<string, unknown>) => Record<string, unknown>,
 ): Promise<Response> {
   const pass = (request.headers.get('x-sync-pass') ?? '').trim()
-  if (pass.length < 4) {
-    return json({ error: 'Frase-chave muito curta (mínimo 4 caracteres).' }, 400)
+  if (pass.length < MIN_SYNC_PASS_LENGTH) {
+    return json({ error: `Frase-chave muito curta (mínimo ${MIN_SYNC_PASS_LENGTH} caracteres).` }, 400)
   }
   const key = await syncKey(pass, prefix)
 
@@ -95,6 +141,7 @@ async function handleCollection(
     if (!Array.isArray(items)) {
       return json({ error: `Corpo deve ser { ${field}: [...] }.` }, 400)
     }
+    if (items.length > 500) return json({ error: 'Limite de 500 itens por sincronização.' }, 413)
     const sanitized = items.map((s) => sanitize((s ?? {}) as Record<string, unknown>))
     await kv.put(key, JSON.stringify({ [field]: sanitized }), {
       expirationTtl: 60 * 60 * 24 * 90,
@@ -284,7 +331,7 @@ async function extractGoogleDocs(target: string): Promise<{ text: string; title:
 
 async function extractGenericText(target: string): Promise<{ text: string; title: string }> {
   const res = await fetchWithTimeout(target, {
-    headers: { 'User-Agent': 'Mozilla/5.0 Alvoprompt', 'Accept-Language': 'pt-BR,pt;q=0.8' },
+    headers: { 'User-Agent': 'Mozilla/5.0 AlvoPrompter', 'Accept-Language': 'pt-BR,pt;q=0.8' },
   })
   if (!res.ok) throw new Error(`Falha ao buscar o link (HTTP ${res.status}).`)
   const contentType = res.headers.get('content-type') ?? ''
@@ -311,14 +358,69 @@ function uTitle(target: string): string {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    if (!allowedOrigin(request, env)) return json({ error: 'Origem não autorizada.' }, 403)
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS })
     const url = new URL(request.url)
 
+    const saasResponse = await handleSaaSRequest(request, env as Env & SaaSEnv)
+    if (saasResponse) return saasResponse
+
+    if (request.method === 'POST' && ['/chat', '/transcribe', '/tts', '/translate', '/avatar'].includes(url.pathname)) {
+      const quotaResponse = await authorizeAiAction(request, env as Env & SaaSEnv)
+      if (quotaResponse) return quotaResponse
+    }
+
+    if (url.pathname === '/chat' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'chat', 100)
+      if (limited) return limited
+      if (!env.DEEPSEEK_API_KEY) return json({ error: 'Serviço de IA não configurado.' }, 503)
+      if (requestTooLarge(request, 128 * 1024)) return json({ error: 'Solicitação muito grande.' }, 413)
+      const input = (await request.json().catch(() => null)) as {
+        messages?: { role?: string; content?: string }[]
+        temperature?: number
+        max_tokens?: number
+      } | null
+      if (!input?.messages?.length || input.messages.length > 30) {
+        return json({ error: 'Conversa inválida.' }, 400)
+      }
+      const messages = input.messages.map((message) => ({
+        role: ['system', 'user', 'assistant'].includes(message.role ?? '') ? message.role : 'user',
+        content: String(message.content ?? '').slice(0, 20_000),
+      }))
+      try {
+        const upstream = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages,
+            stream: true,
+            temperature: Math.min(1.5, Math.max(0, input.temperature ?? 0.7)),
+            max_tokens: Math.min(8_000, Math.max(1, input.max_tokens ?? 2_000)),
+          }),
+        })
+        if (!upstream.ok) return json({ error: 'A IA não respondeu. Tente novamente.' }, upstream.status)
+        return new Response(upstream.body, {
+          status: upstream.status,
+          headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', ...CORS_HEADERS },
+        })
+      } catch {
+        return json({ error: 'A IA está temporariamente indisponível.' }, 502)
+      }
+    }
+
     if (url.pathname === '/transcribe' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'transcribe', 20)
+      if (limited) return limited
+      if (requestTooLarge(request, MAX_AUDIO_BYTES + 1024 * 1024)) return json({ error: 'Áudio acima do limite de 25 MB.' }, 413)
       const form = await request.formData()
       const audio = form.get('audio')
       const lang = (form.get('lang') as string | null) ?? 'pt'
       if (!(audio instanceof File)) return json({ error: 'Campo "audio" ausente.' }, 400)
+      if (audio.size > MAX_AUDIO_BYTES) return json({ error: 'Áudio acima do limite de 25 MB.' }, 413)
       const bytes = new Uint8Array(await audio.arrayBuffer())
       try {
         const result = (await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
@@ -342,8 +444,11 @@ export default {
     }
 
     if (url.pathname === '/tts' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'tts', 50)
+      if (limited) return limited
       const { text, lang } = (await request.json()) as { text?: string; lang?: string }
       if (!text) return json({ error: 'Campo "text" ausente.' }, 400)
+      if (text.length > 5_000) return json({ error: 'Texto acima do limite de 5.000 caracteres.' }, 413)
       const langCode = lang ?? 'pt-br'
 
       try {
@@ -376,12 +481,15 @@ export default {
     }
 
     if (url.pathname === '/translate' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'translate', 100)
+      if (limited) return limited
       const { text, sourceLang, targetLang } = (await request.json()) as {
         text?: string
         sourceLang?: string
         targetLang?: string
       }
       if (!text || !targetLang) return json({ error: 'Campos "text" e "targetLang" obrigatórios.' }, 400)
+      if (text.length > 15_000) return json({ error: 'Texto acima do limite de 15.000 caracteres.' }, 413)
       try {
         const result = (await env.AI.run('@cf/meta/m2m100-1.2b', {
           text,
@@ -395,8 +503,11 @@ export default {
     }
 
     if (url.pathname === '/import-url' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'import', 60)
+      if (limited) return limited
       const { url: target } = (await request.json()) as { url?: string }
       if (!target) return json({ error: 'Campo "url" ausente.' }, 400)
+      if (target.length > 2_048) return json({ error: 'URL acima do limite permitido.' }, 413)
       let parsed: URL
       try {
         parsed = new URL(target)
@@ -417,8 +528,11 @@ export default {
     }
 
     if (url.pathname === '/avatar' && request.method === 'POST') {
+      const limited = await enforceRateLimit(request, env, 'avatar', 10)
+      if (limited) return limited
       const { prompt } = (await request.json()) as { prompt?: string }
       if (!prompt) return json({ error: 'Campo "prompt" ausente.' }, 400)
+      if (prompt.length > 800) return json({ error: 'Descrição acima do limite de 800 caracteres.' }, 413)
       try {
         const result = (await env.AI.run('@cf/black-forest-labs/flux-1-schnell', {
           prompt: `${prompt}, retrato profissional em estúdio, iluminação suave, alta qualidade`,
@@ -451,8 +565,8 @@ export default {
     // ---- Sync de roteiros (KV, protegido por frase-chave) ----
     if (url.pathname === '/sync') {
       const pass = (request.headers.get('x-sync-pass') ?? '').trim()
-      if (pass.length < 4) {
-        return json({ error: 'Frase-chave muito curta (mínimo 4 caracteres).' }, 400)
+      if (pass.length < MIN_SYNC_PASS_LENGTH) {
+        return json({ error: `Frase-chave muito curta (mínimo ${MIN_SYNC_PASS_LENGTH} caracteres).` }, 400)
       }
       const key = await syncKey(pass)
 
@@ -473,6 +587,7 @@ export default {
         if (!Array.isArray(scripts)) {
           return json({ error: 'Corpo deve ser { scripts: [...] }.' }, 400)
         }
+        if (scripts.length > 500) return json({ error: 'Limite de 500 roteiros por sincronização.' }, 413)
         const sanitized = scripts.map((s) => {
           const rec = (s ?? {}) as Record<string, unknown>
           return {
@@ -510,10 +625,15 @@ export default {
     // ---- Armazenamento de mídia no R2 ----
     const mediaMatch = url.pathname.match(/^\/media\/(.+)$/)
     if (mediaMatch) {
-      const key = decodeURIComponent(mediaMatch[1]!)
+      const pass = (request.headers.get('x-sync-pass') ?? '').trim()
+      if (pass.length < MIN_SYNC_PASS_LENGTH) return json({ error: 'Frase-chave obrigatória para acessar mídia.' }, 401)
+      const rawKey = decodeURIComponent(mediaMatch[1]!)
+      if (!/^[a-zA-Z0-9._-]{1,128}$/.test(rawKey)) return json({ error: 'Chave de mídia inválida.' }, 400)
+      const key = `${await syncKey(pass, 'media')}:${rawKey}`
       if (request.method === 'PUT') {
+        if (requestTooLarge(request, MAX_MEDIA_BYTES)) return json({ error: 'Mídia acima do limite de 100 MB.' }, 413)
         await env.alvoprompt_media.put(key, request.body)
-        return json({ ok: true, key })
+        return json({ ok: true, key: rawKey })
       }
       if (request.method === 'GET') {
         const object = await env.alvoprompt_media.get(key)

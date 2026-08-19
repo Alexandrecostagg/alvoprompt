@@ -21,7 +21,7 @@ export function canEdit(ws: Workspace): boolean {
 
 export function defaultBrandKit(): BrandKit {
   return {
-    name: 'Marca Alvoprompt',
+    name: 'Marca AlvoPrompter',
     primaryColor: '#8B5CF6',
     accentColor: '#22D3EE',
     fontFamily: 'system-ui, -apple-system, sans-serif',

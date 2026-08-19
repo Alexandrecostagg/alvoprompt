@@ -1,5 +1,4 @@
-const API_URL = 'https://api.deepseek.com/chat/completions'
-const MODEL = 'deepseek-chat'
+import { apiBase } from './cloudflare'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -13,28 +12,16 @@ interface StreamOptions {
   signal?: AbortSignal
 }
 
-function getApiKey(): string {
-  const key = import.meta.env.VITE_DEEPSEEK_API_KEY
-  if (!key) {
-    throw new Error(
-      'Chave da DeepSeek não configurada. Crie o arquivo .env.local com VITE_DEEPSEEK_API_KEY e reinicie o dev server.',
-    )
-  }
-  return key
-}
-
 export async function chatStream(messages: ChatMessage[], opts: StreamOptions = {}): Promise<string> {
-  const apiKey = getApiKey()
-  const response = await fetch(API_URL, {
+  const token = await (await import('./auth')).getOptionalIdToken()
+  const response = await fetch(`${apiBase()}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
-      model: MODEL,
       messages,
-      stream: true,
       temperature: opts.temperature ?? 0.7,
       ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
     }),

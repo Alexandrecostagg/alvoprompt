@@ -37,7 +37,7 @@ function downloadDataUrl(dataUrl: string, name: string): void {
 }
 
 function mediaFileName(post: ScheduledPost): string {
-  return post.mediaName ?? `alvoprompt-${post.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.webm`
+  return post.mediaName ?? `alvoprompter-${post.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.webm`
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
@@ -68,7 +68,7 @@ export default function SchedulingHub() {
   const [pass, setPass] = useState('')
   const [selected, setSelected] = useState<{ post: ScheduledPost; channel: SocialChannel } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const connected = savedSyncPass() !== null
+  const connected = (savedSyncPass()?.length ?? 0) >= 12
 
   // form state
   const [title, setTitle] = useState('')
@@ -165,14 +165,15 @@ export default function SchedulingHub() {
   }
 
   const del = async (post: ScheduledPost) => {
+    if (!window.confirm(`Excluir o agendamento “${post.title}”?`)) return
     if (post.id != null) await removePost(post.id)
     await refresh()
   }
 
   const runSync = async () => {
     const p = savedSyncPass() ?? pass
-    if (!p || p.trim().length < 4) {
-      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
+    if (!p || p.trim().length < 12) {
+      setMsg({ type: 'err', text: 'Use uma frase-chave com pelo menos 12 caracteres.' })
       return
     }
     setBusy(true)
@@ -201,7 +202,7 @@ export default function SchedulingHub() {
         <div>
           <h1 className="text-2xl font-semibold text-white">Agendamentos</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            Publique o mesmo vídeo em vários canais no horário certo. {connected && '☁️ sync ativo.'}
+            Prepare vídeo e legenda para cada canal e acompanhe a publicação manual. {connected && '☁️ sync ativo.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -239,6 +240,7 @@ export default function SchedulingHub() {
                 if (e.key === 'Enter') void runSync()
               }}
               placeholder="Frase-chave"
+              minLength={12}
               className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text)', minWidth: 180 }}
             />

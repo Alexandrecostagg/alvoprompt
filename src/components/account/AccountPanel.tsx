@@ -1,0 +1,229 @@
+import { useEffect, useMemo, useState } from 'react'
+import { firebaseConfigured, observeUser, resetPassword, signIn, signUp, signUserOut, type User } from '../../lib/auth'
+import { formatPlanPrice, PAID_PLAN_IDS, PLANS, type PlanId } from '../../lib/plans'
+import { cancelSubscription, createCloudWorkspace, inviteWorkspaceMember, loadAccount, startCheckout, type AccountSummary } from '../../lib/saas'
+
+type AuthMode = 'signin' | 'signup'
+
+function friendlyAuthError(error: unknown): string {
+  const code = (error as { code?: string }).code ?? ''
+  if (code.includes('invalid-credential')) return 'E-mail ou senha inválidos.'
+  if (code.includes('email-already-in-use')) return 'Não foi possível criar a conta com esses dados.'
+  if (code.includes('weak-password')) return 'Use uma senha mais forte, com pelo menos 8 caracteres.'
+  if (code.includes('too-many-requests')) return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+  return (error as Error).message || 'Não foi possível concluir. Tente novamente.'
+}
+
+function PlanCard({ planId, currentPlan, busy, onChoose }: { planId: PlanId; currentPlan: PlanId; busy: boolean; onChoose: (plan: PlanId) => void }) {
+  const plan = PLANS[planId]
+  const current = currentPlan === planId
+  return (
+    <article className="relative flex h-full flex-col rounded-3xl border p-5" style={{ borderColor: plan.badge ? 'var(--accent)' : 'var(--border)', background: plan.badge ? 'var(--accent-soft)' : 'var(--bg)' }}>
+      {plan.badge ? <span className="mb-3 w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ background: 'var(--brand-gradient)', color: 'white' }}>{plan.badge}</span> : null}
+      <h3 className="text-lg font-bold">{plan.name}</h3>
+      <p className="mt-2 text-3xl font-extrabold">{formatPlanPrice(plan.priceMonthly)}{plan.priceMonthly > 0 ? <span className="text-sm font-medium" style={{ color: 'var(--muted)' }}>/mês</span> : null}</p>
+      <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{plan.description}</p>
+      <ul className="my-5 space-y-2 text-sm">
+        {plan.features.map((feature) => <li key={feature} className="flex gap-2"><span style={{ color: 'var(--ok)' }}>✓</span><span>{feature}</span></li>)}
+      </ul>
+      <button disabled={busy || current || planId === 'free'} onClick={() => onChoose(planId)} className="mt-auto min-h-11 rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50" style={{ background: planId === 'free' ? 'var(--panel)' : 'var(--brand-gradient)', color: planId === 'free' ? 'var(--muted)' : 'white' }}>
+        {current ? 'Plano atual' : planId === 'free' ? 'Incluído' : `Assinar ${plan.name}`}
+      </button>
+    </article>
+  )
+}
+
+export default function AccountPanel({ open, initialPlan, onClose }: { open: boolean; initialPlan?: PlanId | null; onClose: () => void }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [mode, setMode] = useState<AuthMode>('signin')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [account, setAccount] = useState<AccountSummary | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [workspaceName, setWorkspaceName] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'editor' | 'viewer'>('editor')
+
+  const requestedPlan = useMemo(() => initialPlan && initialPlan !== 'free' ? initialPlan : null, [initialPlan])
+
+  useEffect(() => observeUser((next) => {
+    setUser(next)
+    setAuthReady(true)
+    if (next) setEmail(next.email ?? '')
+    else setAccount(null)
+  }), [])
+
+  useEffect(() => {
+    if (!open || !user) return
+    setBusy(true)
+    loadAccount()
+      .then(setAccount)
+      .catch((error) => setMessage({ kind: 'error', text: (error as Error).message }))
+      .finally(() => setBusy(false))
+  }, [open, user])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!open) return null
+
+  const submitAuth = async () => {
+    if (!email.trim() || password.length < 8 || (mode === 'signup' && !name.trim())) {
+      setMessage({ kind: 'error', text: 'Preencha os dados e use uma senha com pelo menos 8 caracteres.' })
+      return
+    }
+    setBusy(true)
+    setMessage(null)
+    try {
+      if (mode === 'signup') {
+        await signUp(name, email, password)
+        setMessage({ kind: 'ok', text: 'Conta criada. Enviamos um link de verificação para seu e-mail.' })
+      } else {
+        await signIn(email, password)
+      }
+      setPassword('')
+    } catch (error) {
+      setMessage({ kind: 'error', text: friendlyAuthError(error) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const choosePlan = async (plan: PlanId) => {
+    if (plan === 'free') return
+    if (!user) {
+      setMode('signup')
+      setMessage({ kind: 'ok', text: 'Crie sua conta antes de abrir o checkout seguro.' })
+      return
+    }
+    setBusy(true)
+    setMessage(null)
+    try {
+      const { url } = await startCheckout(plan)
+      window.location.assign(url)
+    } catch (error) {
+      setMessage({ kind: 'error', text: (error as Error).message })
+      setBusy(false)
+    }
+  }
+
+  const refreshAccount = async () => setAccount(await loadAccount())
+
+  const addWorkspace = async () => {
+    if (!workspaceName.trim()) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      await createCloudWorkspace(workspaceName)
+      setWorkspaceName('')
+      await refreshAccount()
+      setMessage({ kind: 'ok', text: 'Workspace em nuvem criado com você como proprietário.' })
+    } catch (error) {
+      setMessage({ kind: 'error', text: (error as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const sendInvite = async (workspaceId: string) => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await inviteWorkspaceMember(workspaceId, { email: inviteEmail, name: inviteName, role: inviteRole })
+      setInviteEmail('')
+      setInviteName('')
+      setMessage({ kind: 'ok', text: 'Convite registrado. O acesso será vinculado quando esse e-mail entrar no AlvoPrompter.' })
+    } catch (error) {
+      setMessage({ kind: 'error', text: (error as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelRenewal = async () => {
+    if (!window.confirm('Cancelar a renovação mensal? O acesso pago continua até o fim do período atual e não haverá nova cobrança.')) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      const result = await cancelSubscription()
+      await refreshAccount()
+      setMessage({ kind: 'ok', text: `Renovação cancelada. Seu acesso continua até ${new Date(result.accessUntil).toLocaleDateString('pt-BR')}.` })
+    } catch (error) {
+      setMessage({ kind: 'error', text: (error as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label="Conta e assinatura">
+      <div className="mx-auto min-h-full max-w-5xl rounded-[2rem] border p-4 shadow-2xl sm:p-7" style={{ borderColor: 'var(--border)', background: 'var(--panel)', color: 'var(--text)' }}>
+        <div className="flex items-start justify-between gap-4">
+          <div><p className="text-xs font-bold uppercase tracking-[.16em]" style={{ color: 'var(--brand-strong)' }}>AlvoPrompter SaaS</p><h2 className="mt-1 text-2xl font-extrabold">Conta e assinatura</h2><p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>Cobrança recorrente processada no checkout seguro do Asaas.</p></div>
+          <button onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: 'var(--bg)', color: 'var(--muted)' }} aria-label="Fechar conta">×</button>
+        </div>
+
+        {message ? <p className="mt-5 rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: message.kind === 'error' ? 'var(--danger)' : 'var(--ok)', color: message.kind === 'error' ? 'var(--danger)' : 'var(--ok)' }}>{message.text}</p> : null}
+
+        {!firebaseConfigured ? (
+          <div className="mt-8 rounded-3xl border p-6" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
+            <h3 className="font-bold">Contas aguardando configuração do ambiente</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>O código de login, RBAC e cobrança já está instalado. Para ativar contas neste ambiente, configure as variáveis públicas do Firebase e os segredos do Worker descritos no README. O app local continua disponível sem conta.</p>
+          </div>
+        ) : !authReady ? (
+          <p className="mt-10 text-center text-sm" style={{ color: 'var(--muted)' }}>Carregando conta…</p>
+        ) : !user ? (
+          <div className="mx-auto mt-8 max-w-md rounded-3xl border p-5 sm:p-7" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
+            <div className="grid grid-cols-2 rounded-2xl p-1" style={{ background: 'var(--panel)' }}>
+              <button onClick={() => setMode('signin')} className="min-h-10 rounded-xl text-sm font-bold" style={{ background: mode === 'signin' ? 'var(--bg)' : 'transparent', color: mode === 'signin' ? 'var(--text)' : 'var(--muted)' }}>Entrar</button>
+              <button onClick={() => setMode('signup')} className="min-h-10 rounded-xl text-sm font-bold" style={{ background: mode === 'signup' ? 'var(--bg)' : 'transparent', color: mode === 'signup' ? 'var(--text)' : 'var(--muted)' }}>Criar conta</button>
+            </div>
+            {requestedPlan ? <p className="mt-4 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>Plano escolhido: {PLANS[requestedPlan].name}. Após entrar, confirme a assinatura.</p> : null}
+            {mode === 'signup' ? <label className="mt-5 block text-sm font-semibold">Nome<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className="mt-2 min-h-12 w-full rounded-2xl border bg-transparent px-4 outline-none" style={{ borderColor: 'var(--border)' }} /></label> : null}
+            <label className="mt-4 block text-sm font-semibold">E-mail<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" className="mt-2 min-h-12 w-full rounded-2xl border bg-transparent px-4 outline-none" style={{ borderColor: 'var(--border)' }} /></label>
+            <label className="mt-4 block text-sm font-semibold">Senha<input value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void submitAuth() }} type="password" minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} className="mt-2 min-h-12 w-full rounded-2xl border bg-transparent px-4 outline-none" style={{ borderColor: 'var(--border)' }} /></label>
+            <button onClick={() => void submitAuth()} disabled={busy} className="mt-5 min-h-12 w-full rounded-2xl font-bold text-white disabled:opacity-50" style={{ background: 'var(--brand-gradient)' }}>{busy ? 'Aguarde…' : mode === 'signup' ? 'Criar conta grátis' : 'Entrar'}</button>
+            {mode === 'signin' ? <button onClick={() => { if (!email.trim()) setMessage({ kind: 'error', text: 'Informe seu e-mail primeiro.' }); else void resetPassword(email).then(() => setMessage({ kind: 'ok', text: 'Se a conta existir, enviaremos a recuperação por e-mail.' })).catch((error) => setMessage({ kind: 'error', text: friendlyAuthError(error) })) }} className="mt-3 min-h-10 w-full text-sm font-semibold" style={{ color: 'var(--brand-strong)' }}>Esqueci minha senha</button> : null}
+          </div>
+        ) : (
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4 rounded-3xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
+            <div><p className="font-bold">{user.displayName || 'Minha conta'}</p><p className="text-sm" style={{ color: 'var(--muted)' }}>{user.email} · Plano {PLANS[account?.subscription.plan ?? 'free'].name}</p>{account ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{account.usage.aiActions} de {account.limits.aiActionsMonthly} ações de IA usadas neste mês</p> : null}{account?.subscription.currentPeriodEnd ? <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>Ciclo atual até {new Date(account.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</p> : null}</div>
+            <div className="flex flex-wrap gap-2">{account?.subscription.status === 'active' ? <button onClick={() => void cancelRenewal()} disabled={busy} className="min-h-11 rounded-2xl border px-4 text-sm font-bold disabled:opacity-50" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>Cancelar renovação</button> : null}<button onClick={() => void signUserOut()} className="min-h-11 rounded-2xl border px-4 text-sm font-bold" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>Sair da conta</button></div>
+          </div>
+        )}
+
+        {user && account ? (
+          <section className="mt-7 rounded-3xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
+            <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Equipe com permissões reais</h3><p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>O servidor valida proprietário, admin, editor e leitor em cada operação.</p></div><span className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>RBAC</span></div>
+            {account.limits.workspaces === 0 ? <p className="mt-4 text-sm" style={{ color: 'var(--muted)' }}>Workspaces em nuvem começam no Criador; convites e até 5 membros ficam no Studio.</p> : (
+              <>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row"><input value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} placeholder="Nome do novo workspace" maxLength={80} className="min-h-11 flex-1 rounded-2xl border bg-transparent px-4 text-sm outline-none" style={{ borderColor: 'var(--border)' }} /><button onClick={() => void addWorkspace()} disabled={busy || !workspaceName.trim()} className="min-h-11 rounded-2xl px-4 text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--brand-gradient)' }}>Criar workspace</button></div>
+                <div className="mt-4 grid gap-3">
+                  {account.workspaces.map((workspace) => <article key={workspace.id} className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+                    <div className="flex items-center justify-between gap-3"><div><p className="font-bold">{workspace.name}</p><p className="text-xs capitalize" style={{ color: 'var(--muted)' }}>Seu papel: {workspace.role}</p></div><span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>{workspace.role}</span></div>
+                    {account.subscription.plan === 'studio' && ['owner', 'admin'].includes(workspace.role) ? <div className="mt-4 grid gap-2 border-t pt-4 sm:grid-cols-[1fr_1fr_auto_auto]" style={{ borderColor: 'var(--border)' }}><input value={inviteName} onChange={(event) => setInviteName(event.target.value)} placeholder="Nome" className="min-h-10 rounded-xl border bg-transparent px-3 text-sm" style={{ borderColor: 'var(--border)' }} /><input value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="E-mail" type="email" className="min-h-10 rounded-xl border bg-transparent px-3 text-sm" style={{ borderColor: 'var(--border)' }} /><select value={inviteRole} onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)} className="min-h-10 rounded-xl border bg-transparent px-3 text-sm" style={{ borderColor: 'var(--border)' }}><option value="admin">Admin</option><option value="editor">Editor</option><option value="viewer">Leitor</option></select><button onClick={() => void sendInvite(workspace.id)} disabled={busy || !inviteEmail.trim()} className="min-h-10 rounded-xl px-3 text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--brand-gradient)' }}>Convidar</button></div> : null}
+                  </article>)}
+                  {account.workspaces.length === 0 ? <p className="text-sm" style={{ color: 'var(--muted)' }}>Nenhum workspace em nuvem ainda.</p> : null}
+                </div>
+              </>
+            )}
+          </section>
+        ) : null}
+
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <PlanCard planId="free" currentPlan={account?.subscription.plan ?? 'free'} busy={busy} onChoose={choosePlan} />
+          {PAID_PLAN_IDS.map((planId) => <PlanCard key={planId} planId={planId} currentPlan={account?.subscription.plan ?? 'free'} busy={busy} onChoose={choosePlan} />)}
+        </div>
+        <p className="mt-5 text-center text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>Os planos pagos são mensais e recorrentes. O acesso só é liberado após confirmação do Asaas. Nenhum dado de cartão passa pelo AlvoPrompter.</p>
+      </div>
+    </div>
+  )
+}

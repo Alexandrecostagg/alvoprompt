@@ -13,7 +13,8 @@ export default function SyncControl() {
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-  const connected = savedSyncPass() !== null
+  const storedPass = savedSyncPass()
+  const connected = (storedPass?.length ?? 0) >= 12
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -41,9 +42,9 @@ export default function SyncControl() {
   }, [connected])
 
   const run = async (fn: (p: string) => Promise<unknown>, okText: string) => {
-    const p = savedSyncPass() ?? pass
-    if (!p || p.trim().length < 4) {
-      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
+    const p = connected ? storedPass! : pass
+    if (!p || p.trim().length < 12) {
+      setMsg({ type: 'err', text: 'Use uma frase-chave com pelo menos 12 caracteres.' })
       return
     }
     setBusy(true)
@@ -62,8 +63,8 @@ export default function SyncControl() {
   }
 
   const handleConnect = () => {
-    if (pass.trim().length < 4) {
-      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
+    if (pass.trim().length < 12) {
+      setMsg({ type: 'err', text: 'Use uma frase-chave com pelo menos 12 caracteres.' })
       return
     }
     saveSyncPass(pass)
@@ -135,7 +136,11 @@ export default function SyncControl() {
                   Enviar p/ nuvem
                 </button>
                 <button
-                  onClick={() => void run(pullReplace, 'Biblioteca substituída pela nuvem.')}
+                  onClick={() => {
+                    if (window.confirm('Substituir todos os roteiros deste dispositivo pelos dados da nuvem?')) {
+                      void run(pullReplace, 'Biblioteca substituída pela nuvem.')
+                    }
+                  }}
                   disabled={busy}
                   className="flex-1 rounded-lg border py-2 text-xs font-medium disabled:opacity-40"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
@@ -169,12 +174,13 @@ export default function SyncControl() {
                   if (e.key === 'Enter') handleConnect()
                 }}
                 placeholder="Crie sua frase-chave"
+                minLength={12}
                 className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm text-white outline-none"
                 style={{ borderColor: 'var(--border)' }}
               />
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
-                A mesma frase-chave em outro aparelho libera seus roteiros na nuvem. Sem cadastro,
-                sem e-mail — só guarde bem a frase.
+                Use pelo menos 12 caracteres e não reutilize uma senha pessoal. Por segurança, a frase
+                fica somente nesta sessão e será pedida novamente ao reabrir o app.
               </p>
               {msg && (
                 <p className="text-xs" style={{ color: msg.type === 'err' ? 'var(--danger)' : 'var(--ok)' }}>

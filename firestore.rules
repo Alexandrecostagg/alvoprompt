@@ -2,10 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Roteiros sincronizados. Modo de teste: qualquer usuário autenticado
-    // pode ler/escrever. Antes de produção, restringir por dono (uid).
-    match /scripts/{id} {
-      allow read, write: if request.auth != null;
+    // Estrutura segura caso o Firebase volte a ser usado no futuro:
+    // /users/{uid}/scripts/{scriptId}. O sync atual usa Cloudflare KV.
+    match /users/{userId}/scripts/{scriptId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

@@ -5,6 +5,10 @@
  */
 const DEFAULT_BASE = 'http://localhost:8787'
 
+async function optionalAuthToken(): Promise<string | null> {
+  return (await import('./auth')).getOptionalIdToken()
+}
+
 export interface WhisperWord {
   word: string
   start: number
@@ -21,7 +25,14 @@ export function apiBase(): string {
 }
 
 async function fetchJson(path: string, init: RequestInit): Promise<unknown> {
-  const res = await fetch(`${apiBase()}${path}`, init)
+  const token = await optionalAuthToken()
+  const res = await fetch(`${apiBase()}${path}`, {
+    ...init,
+    headers: {
+      ...(init.headers as Record<string, string> | undefined),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null
     throw new Error(body?.error ?? `Erro ${res.status} na API`)
@@ -40,9 +51,10 @@ export async function transcribeAudio(blob: Blob, lang: string): Promise<Whisper
 }
 
 export async function speakWithTts(text: string, lang = 'pt-br'): Promise<Blob> {
+  const token = await optionalAuthToken()
   const res = await fetch(`${apiBase()}/tts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ text, lang }),
   })
   if (!res.ok) throw new Error(`Erro ${res.status} no TTS`)
@@ -68,9 +80,10 @@ export async function fetchRemoteText(url: string): Promise<{ text: string; titl
 }
 
 export async function generateAvatar(prompt: string): Promise<Blob> {
+  const token = await optionalAuthToken()
   const res = await fetch(`${apiBase()}/avatar`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ prompt }),
   })
   if (!res.ok) {

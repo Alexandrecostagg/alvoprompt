@@ -340,7 +340,7 @@ export async function createVoiceProfile(name: string, samples: VoiceSample[], l
   return saveVoiceProfile({ key: newKey('v'), name, samples, lang, createdAt: Date.now() })
 }
 
-// ---- Gravação de amostras de voz (clone de voz) ----
+// ---- Gravação de referências de voz (reprodução; não realiza clonagem) ----
 
 export class VoiceRecorder {
   private stream: MediaStream | null = null

@@ -37,7 +37,7 @@ export default function WorkspacesPanel() {
   const [pass, setPass] = useState('')
   const [syncOpen, setSyncOpen] = useState(false)
   const logoRef = useRef<HTMLInputElement>(null)
-  const connected = savedSyncPass() !== null
+  const connected = (savedSyncPass()?.length ?? 0) >= 12
 
   const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? null
 
@@ -118,8 +118,8 @@ export default function WorkspacesPanel() {
 
   const runSync = async () => {
     const p = savedSyncPass() ?? pass
-    if (!p || p.trim().length < 4) {
-      setMsg({ type: 'err', text: 'Crie uma frase-chave com pelo menos 4 caracteres.' })
+    if (!p || p.trim().length < 12) {
+      setMsg({ type: 'err', text: 'Use uma frase-chave com pelo menos 12 caracteres.' })
       return
     }
     setBusy(true)
@@ -143,7 +143,7 @@ export default function WorkspacesPanel() {
         <div>
           <h1 className="text-2xl font-semibold text-white">Workspaces</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            Equipes e brand kits compartilhados entre dispositivos.{' '}
+            Workspace local (legado): brand kits e lista de colaboradores por frase-chave. Contas e RBAC ficam em “Conta”.{' '}
             {connected && '☁️ sync ativo.'}
           </p>
         </div>
@@ -184,6 +184,7 @@ export default function WorkspacesPanel() {
                 if (e.key === 'Enter') void runSync()
               }}
               placeholder="Frase-chave da equipe"
+              minLength={12}
               className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text)', minWidth: 180 }}
             />

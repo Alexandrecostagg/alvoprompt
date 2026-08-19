@@ -1,5 +1,7 @@
 # Análise de Competidores — Bigvu, Teleprompter Pro, PromptSmart
 
+> Pesquisa de referência de produto. Confirme preços, avaliações e funcionalidades nas fontes oficiais antes de reutilizar estes dados publicamente.
+
 > Pesquisa realizada em 15/08/2026 (Google Play + sites oficiais)
 
 ---

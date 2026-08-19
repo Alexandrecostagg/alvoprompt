@@ -73,7 +73,7 @@ export function buildCaptionForChannel(post: ScheduledPost, channel: SocialChann
         post.title.trim(),
         base,
         ht.trim() ? `${ht.trim()}\n\n` : '',
-        `🎬 Criado com Alvoprompt — seu texto no alvo, seus olhos na câmera.`,
+        `🎬 Criado com AlvoPrompter — seu roteiro no alvo. Seu olhar na câmera.`,
       ]
         .filter(Boolean)
         .join('\n\n')
@@ -89,7 +89,7 @@ export function buildCaptionForChannel(post: ScheduledPost, channel: SocialChann
         base,
         ht.trim() ? ht.trim() : '',
         '',
-        '— Gerado com Alvoprompt 🎥',
+        '— Gerado com AlvoPrompter 🎥',
       ]
         .filter(Boolean)
         .join('\n\n')

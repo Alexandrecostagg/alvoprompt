@@ -19,6 +19,16 @@ id = "7f2df53777804be2aefce83dd26e3945"
 
 # Uso local: npx wrangler dev --port 8787
 # Publicar: npx wrangler deploy
-# CORS liberado para qualquer origem (desenvolvimento)
+# Origens autorizadas. Adicione o domínio público real antes do deploy.
 [vars]
-CORS_ORIGIN = "*"
+CORS_ORIGIN = "http://localhost:5173,http://127.0.0.1:5173,capacitor://localhost,http://localhost,https://localhost"
+FIREBASE_PROJECT_ID = "configure-o-id-do-projeto"
+APP_URL = "http://localhost:5173"
+ASAAS_API_BASE = "https://api-sandbox.asaas.com/v3"
+
+# Banco de contas, assinaturas e RBAC.
+[[d1_databases]]
+binding = "DB"
+database_name = "alvoprompter-saas"
+database_id = "f7cd9af4-26f0-4d5a-ab25-8464581b84d3"
+migrations_dir = "migrations"
