@@ -1045,12 +1045,14 @@
     </button>
 
     <script>
-      const APP_URL = "/";
+      const APP_URL = window.location.protocol === "file:"
+        ? "http://127.0.0.1:5173/"
+        : new URL("/", window.location.origin).href;
       document.querySelectorAll(".js-app").forEach((a) => {
         const path = a.dataset.appPath || "";
-        a.href = APP_URL.replace(/\/$/, "/") + path.replace(/^\//, "");
-        a.target = "_blank";
-        a.rel = "noopener";
+        a.href = new URL(path.replace(/^\//, ""), APP_URL).href;
+        a.removeAttribute("target");
+        a.removeAttribute("rel");
       });
 
       /* Reveal on scroll */

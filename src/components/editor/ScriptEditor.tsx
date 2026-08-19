@@ -18,6 +18,7 @@ export default function ScriptEditor() {
   const [dirty, setDirty] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
   const [showTiming, setShowTiming] = useState(false)
+  const [showTools, setShowTools] = useState(false)
   const [ttsBusy, setTtsBusy] = useState(false)
   const [ttsPlaying, setTtsPlaying] = useState(false)
 
@@ -100,53 +101,59 @@ export default function ScriptEditor() {
       <div className="sticky top-0 z-20 -mx-4 mb-4 border-b px-4 pb-3 backdrop-blur-xl sm:static sm:mx-0 sm:rounded-2xl sm:border sm:p-3" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--bg) 92%, transparent)' }}>
         <div className="flex items-center gap-2">
           <button onClick={() => setView('library')} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-lg" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Voltar para a biblioteca">←</button>
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">Editar roteiro</p><p className="text-[11px]" style={{ color: dirty ? 'var(--warn)' : 'var(--muted)' }}>{dirty ? 'Alterações não salvas' : 'Tudo salvo neste dispositivo'}</p></div>
+          <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">Roteiro · etapa 2 de 3</p><p className="text-[11px]" style={{ color: dirty ? 'var(--warn)' : 'var(--muted)' }}>{dirty ? 'Alterações não salvas' : 'Salvo neste dispositivo'}</p></div>
           <button onClick={() => void handleSave()} disabled={!dirty} className="min-h-11 rounded-2xl border px-3 text-xs font-bold disabled:opacity-50" style={{ borderColor: dirty ? 'var(--warn)' : 'var(--border)', color: dirty ? 'var(--warn)' : 'var(--muted)' }}>{dirty ? 'Salvar' : 'Salvo'}</button>
-          <button onClick={() => setView('prompter')} disabled={words === 0} className="min-h-11 rounded-2xl px-4 text-sm font-bold text-white disabled:opacity-40" style={{ background: 'var(--brand-gradient)' }}>Prompter</button>
+          <button onClick={() => void handleSave().then(() => setView('prompter'))} disabled={words === 0} className="min-h-11 rounded-2xl px-3 text-sm font-bold text-white disabled:opacity-40 sm:px-4" style={{ background: 'var(--brand-gradient)' }}>Preparar</button>
         </div>
-        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 sm:justify-end">
+        <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Progresso de criação">
+          <span className="h-1.5 rounded-full" style={{ background: 'var(--brand-strong)' }} />
+          <span className="h-1.5 rounded-full" style={{ background: 'var(--brand-strong)' }} />
+          <span className="h-1.5 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:flex sm:justify-end">
           <button
             onClick={() => fileRef.current?.click()}
-            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm"
+            className="min-h-10 rounded-xl border px-2 text-xs font-semibold sm:px-3 sm:text-sm"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
-            ▤ Importar
+            Importar
           </button>
           <button
             onClick={() => openAiPanel(aiPanelTab ?? 'generate')}
-            className="min-h-10 shrink-0 rounded-xl px-3 text-sm font-semibold"
+            className="min-h-10 rounded-xl px-2 text-xs font-semibold sm:px-3 sm:text-sm"
             style={{
-              background: 'var(--accent-2)',
-              color: '#0e0a1a',
+              background: 'var(--accent-soft)',
+              color: 'var(--brand-strong)',
             }}
           >
-            ✨ IA
+            Gerar com IA
           </button>
+          <button onClick={() => setShowTools((value) => !value)} className="min-h-10 rounded-xl border px-2 text-xs font-semibold sm:px-3 sm:text-sm" style={{ borderColor: showTools ? 'var(--brand-strong)' : 'var(--border)', color: showTools ? 'var(--brand-strong)' : 'var(--text)' }}>{showTools ? 'Fechar' : 'Ferramentas'}</button>
+        </div>
+        {showTools ? <div className="mt-2 grid grid-cols-3 gap-2 rounded-2xl border p-2" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
           <button
             onClick={() => void toggleDubbing()}
             disabled={ttsBusy || words === 0}
-            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm disabled:opacity-40"
+            className="min-h-11 rounded-xl px-2 text-xs font-semibold disabled:opacity-40"
             style={{
-              borderColor: ttsPlaying ? 'var(--accent)' : 'var(--border)',
+              background: ttsPlaying ? 'var(--accent-soft)' : 'var(--bg)',
               color: ttsPlaying ? 'var(--accent)' : 'var(--text)',
             }}
-            title="Gera a narração do roteiro com IA (dublagem)"
           >
-            {ttsBusy ? 'Gerando...' : ttsPlaying ? '⏹ Parar dublagem' : '🔊 Dublar'}
+            {ttsBusy ? 'Gerando…' : ttsPlaying ? 'Parar áudio' : 'Ouvir texto'}
           </button>
           <button
             onClick={() => setShowAnalysis((v) => !v)}
-            className="min-h-10 shrink-0 rounded-xl border px-3 text-sm"
+            className="min-h-11 rounded-xl px-2 text-xs font-semibold"
             style={{
-              borderColor: showAnalysis ? 'var(--accent)' : 'var(--border)',
+              background: showAnalysis ? 'var(--accent-soft)' : 'var(--bg)',
               color: showAnalysis ? 'var(--accent)' : 'var(--text)',
             }}
-            title="Análise, palavras-chave e remoção de vícios de linguagem"
           >
-            📊 Analisar
+            Analisar texto
           </button>
-          <button onClick={() => setShowTiming((value) => !value)} className="min-h-10 shrink-0 rounded-xl border px-3 text-sm" style={{ borderColor: showTiming ? 'var(--accent)' : 'var(--border)', color: showTiming ? 'var(--accent)' : 'var(--text)' }}>◷ Ritmo</button>
-        </div>
+          <button onClick={() => setShowTiming((value) => !value)} className="min-h-11 rounded-xl px-2 text-xs font-semibold" style={{ background: showTiming ? 'var(--accent-soft)' : 'var(--bg)', color: showTiming ? 'var(--accent)' : 'var(--text)' }}>Ajustar ritmo</button>
+        </div> : null}
         <input
           ref={fileRef}
           type="file"

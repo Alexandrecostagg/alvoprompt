@@ -1,10 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '../../store/useAppStore'
 import { estimateDurationMinutes, wordCount } from '../../lib/text'
 import { formatElapsed } from '../../hooks/useRecorder'
 import { IMPORTABLE_EXT, extractTextFromFile, extractTextFromUrl, fileNameFromImport } from '../../lib/importers'
 import { transcribeAudio } from '../../lib/cloudflare'
 import type { Script } from '../../lib/types'
+
+type LibraryIconName = 'document' | 'sparkles' | 'import' | 'play' | 'search'
+
+function LibraryIcon({ name, className = 'h-5 w-5' }: { name: LibraryIconName; className?: string }) {
+  const paths = {
+    document: <><path d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>,
+    sparkles: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" /><path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z" /></>,
+    import: <><path d="M12 3v12M7 10l5 5 5-5" /><path d="M5 21h14" /></>,
+    play: <path d="m9 7 8 5-8 5V7Z" />,
+    search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>,
+  } satisfies Record<LibraryIconName, ReactNode>
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
+}
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
@@ -18,7 +31,7 @@ function relativeTime(ts: number): string {
 }
 
 export default function ScriptLibrary() {
-  const { scripts, loading, loadError, removeScript, selectScript, setView, settings, openAiPanel } =
+  const { scripts, currentScript, loading, loadError, removeScript, selectScript, setView, settings, openAiPanel } =
     useAppStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
@@ -105,44 +118,38 @@ export default function ScriptLibrary() {
     setView('prompter')
   }
 
+  const workflowStep = currentScript?.content.trim() ? 2 : 1
+
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-6 sm:py-8">
-      <div className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--brand-strong)' }}>Seu estúdio</p>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Meus roteiros</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            {scripts.length} roteiro{scripts.length === 1 ? '' : 's'} · salvos localmente no seu
-            dispositivo
-          </p>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--brand-strong)' }}>Biblioteca</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Seus roteiros</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{scripts.length === 0 ? 'Comece com um texto ou importe o que já tem.' : `${scripts.length} roteiro${scripts.length === 1 ? '' : 's'} neste dispositivo.`}</p>
         </div>
-        <div className="grid grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:flex-wrap">
-          <button
-            onClick={createNew}
-            className="min-h-12 rounded-2xl px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
-            style={{ background: 'var(--brand-gradient)' }}
-          >
-            + Novo roteiro
-          </button>
-          <button
-            onClick={createWithAi}
-            className="min-h-12 rounded-2xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}
-          >
-            ✦ Criar com IA
-          </button>
-          <button
-            onClick={() => {
-              setLinkError(null)
-              setShowImportMenu(true)
-            }}
-            className="min-h-12 min-w-12 rounded-2xl border px-3 py-2 text-sm font-semibold transition-colors"
-            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-            aria-label="Abrir opções de importação"
-          >
-            {audioBusy ? '…' : 'Importar'}
-          </button>
+        {scripts.length > 0 ? <button onClick={createNew} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl font-medium text-white shadow-lg" style={{ background: 'var(--brand-gradient)', boxShadow: '0 10px 26px rgba(99,102,241,.24)' }} aria-label="Criar novo roteiro">+</button> : null}
+      </div>
+
+      <section className="relative mb-4 overflow-hidden rounded-[1.75rem] border p-5 sm:p-6" style={{ borderColor: 'color-mix(in srgb, var(--brand-strong) 24%, var(--border))', background: 'linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 10%, var(--panel)))' }} aria-label="Fluxo de criação">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[.16em]" style={{ color: 'var(--brand-strong)' }}>Fluxo guiado · etapa {workflowStep} de 3</p>
+            <h2 className="mt-2 text-xl font-bold">{workflowStep === 1 ? 'Crie o roteiro do seu vídeo' : 'Seu roteiro está pronto para ajustar'}</h2>
+            <p className="mt-1 max-w-xl text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{workflowStep === 1 ? 'Comece em branco, use IA ou importe um conteúdo.' : 'Revise o texto e abra o prompter quando estiver confortável.'}</p>
+          </div>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl" style={{ background: 'var(--panel)', color: 'var(--brand-strong)' }}><LibraryIcon name={workflowStep === 1 ? 'document' : 'play'} /></span>
         </div>
+        <div className="mt-5 grid grid-cols-3 gap-2" aria-hidden="true">
+          {[1, 2, 3].map((step) => <span key={step} className="h-1.5 rounded-full" style={{ background: step <= workflowStep ? 'var(--brand-strong)' : 'var(--border)' }} />)}
+        </div>
+        {workflowStep === 2 ? <button onClick={() => setView('editor')} className="mt-5 min-h-12 w-full rounded-2xl text-sm font-bold text-white sm:w-auto sm:px-5" style={{ background: 'var(--brand-gradient)' }}>Continuar no editor</button> : null}
+      </section>
+
+      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3" aria-label="Criar ou importar roteiro">
+        <button onClick={createNew} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 text-center text-xs font-bold sm:min-h-20 sm:flex-row sm:px-4 sm:text-sm" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}><span className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}><LibraryIcon name="document" /></span>Novo roteiro</button>
+        <button onClick={createWithAi} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 text-center text-xs font-bold sm:min-h-20 sm:flex-row sm:px-4 sm:text-sm" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}><span className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}><LibraryIcon name="sparkles" /></span>Gerar com IA</button>
+        <button onClick={() => { setLinkError(null); setShowImportMenu(true) }} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 text-center text-xs font-bold sm:min-h-20 sm:flex-row sm:px-4 sm:text-sm" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}><span className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}><LibraryIcon name="import" /></span>{audioBusy ? 'Importando…' : 'Importar'}</button>
         <input
           ref={fileRef}
           type="file"
@@ -169,7 +176,7 @@ export default function ScriptLibrary() {
 
       {scripts.length > 0 ? (
         <label className="mb-4 flex min-h-12 items-center gap-3 rounded-2xl border px-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
-          <span aria-hidden="true" style={{ color: 'var(--muted)' }}>⌕</span>
+          <span style={{ color: 'var(--muted)' }}><LibraryIcon name="search" /></span>
           <span className="sr-only">Buscar roteiros</span>
           <input
             type="search"
@@ -193,21 +200,14 @@ export default function ScriptLibrary() {
         </p>
       ) : scripts.length === 0 ? (
         <div
-          className="rounded-3xl border p-7 text-center sm:p-12"
+          className="rounded-3xl border border-dashed p-6 text-center sm:p-8"
           style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
         >
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl text-2xl" style={{ background: 'var(--accent-soft)' }}>⌁</div>
-          <p className="mt-4 text-lg font-bold text-white">Seu primeiro roteiro começa aqui</p>
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}><LibraryIcon name="document" /></div>
+          <p className="mt-4 font-bold">Nenhum roteiro ainda</p>
           <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
-            Crie um roteiro ou importe um arquivo .txt / .md / .docx / PDF / áudio para começar.
+            Use uma das três opções acima para começar. Você poderá revisar tudo antes de abrir o prompter.
           </p>
-          <button
-            onClick={createNew}
-            className="mt-6 min-h-11 rounded-xl px-5 py-2.5 text-sm font-bold text-white"
-            style={{ background: 'var(--brand-gradient)' }}
-          >
-            Criar meu primeiro roteiro
-          </button>
         </div>
       ) : visibleScripts.length === 0 ? (
         <div className="rounded-3xl border p-8 text-center" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>

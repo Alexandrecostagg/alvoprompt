@@ -176,8 +176,9 @@ export default function AccountPanel({ open, initialPlan, onClose }: { open: boo
 
         {!firebaseConfigured ? (
           <div className="mt-8 rounded-3xl border p-6" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}>
-            <h3 className="font-bold">Contas aguardando configuração do ambiente</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>O código de login, RBAC e cobrança já está instalado. Para ativar contas neste ambiente, configure as variáveis públicas do Firebase e os segredos do Worker descritos no README. O app local continua disponível sem conta.</p>
+            <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[.14em]" style={{ background: 'var(--accent-soft)', color: 'var(--brand-strong)' }}>Modo local</span>
+            <h3 className="mt-3 font-bold">Sua conta online ainda não está ativa neste beta</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>Você pode criar roteiros, usar o prompter e gravar normalmente neste dispositivo. Sincronização, equipe, backup e assinatura serão liberados quando o acesso online for ativado.</p>
           </div>
         ) : !authReady ? (
           <p className="mt-10 text-center text-sm" style={{ color: 'var(--muted)' }}>Carregando conta…</p>

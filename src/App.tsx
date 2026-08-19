@@ -4,6 +4,7 @@ import type { View } from './lib/types'
 import BrandMark from './components/BrandMark'
 import SyncControl from './components/SyncControl'
 import type { PlanId } from './lib/plans'
+import { observeUser, type User } from './lib/auth'
 
 const ScriptLibrary = lazy(() => import('./components/library/ScriptLibrary'))
 const ScriptEditor = lazy(() => import('./components/editor/ScriptEditor'))
@@ -14,6 +15,10 @@ const SchedulingHub = lazy(() => import('./components/scheduling/SchedulingHub')
 const WorkspacesPanel = lazy(() => import('./components/workspace/WorkspacesPanel'))
 const AiTwin = lazy(() => import('./components/aiTwin/AiTwin'))
 const AccountPanel = lazy(() => import('./components/account/AccountPanel'))
+const WelcomeFlow = lazy(() => import('./components/account/WelcomeFlow'))
+
+// A chave versionada faz o novo onboarding aparecer uma vez também para quem atualizar o app.
+const LOCAL_ACCESS_KEY = 'alvoprompter-local-access-v2'
 
 type IconName = 'scripts' | 'edit' | 'record' | 'calendar' | 'more' | 'control' | 'team' | 'twin' | 'theme' | 'account'
 
@@ -83,6 +88,9 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
   const [moreOpen, setMoreOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [localAccess, setLocalAccess] = useState(() => localStorage.getItem(LOCAL_ACCESS_KEY) === 'enabled')
   const [requestedPlan] = useState<PlanId | null>(() => {
     const value = new URLSearchParams(window.location.search).get('plan')
     return value === 'creator' || value === 'studio' ? value : null
@@ -92,6 +100,15 @@ export default function App() {
     void useAppStore.getState().loadScripts()
     void useAppStore.getState().refreshWorkspaces()
   }, [])
+
+  useEffect(() => observeUser((nextUser) => {
+    setUser(nextUser)
+    setAuthReady(true)
+    if (nextUser) {
+      localStorage.removeItem(LOCAL_ACCESS_KEY)
+      setLocalAccess(false)
+    }
+  }), [])
 
   useEffect(() => {
     if (requestedPlan) setAccountOpen(true)
@@ -112,6 +129,19 @@ export default function App() {
       selectScript({ title: 'Novo roteiro', content: '', createdAt: now, updatedAt: now })
     }
     navigate('editor')
+  }
+
+  const continueLocally = () => {
+    localStorage.setItem(LOCAL_ACCESS_KEY, 'enabled')
+    setLocalAccess(true)
+  }
+
+  if (!authReady) {
+    return <div className="grid min-h-[100dvh] place-items-center" style={{ background: 'var(--bg)' }}><LoadingView /></div>
+  }
+
+  if (!user && !localAccess) {
+    return <Suspense fallback={<LoadingView />}><WelcomeFlow requestedPlan={requestedPlan} onContinueLocal={continueLocally} /></Suspense>
   }
 
   if (view === 'prompter' || view === 'video-editor' || view === 'control') {
