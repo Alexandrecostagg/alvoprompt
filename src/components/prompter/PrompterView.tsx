@@ -8,6 +8,7 @@ import { useRecorder, formatElapsed } from '../../hooks/useRecorder'
 import { useTranscription } from '../../hooks/useTranscription'
 import { buildSrt, type CaptionUtterance } from '../../lib/srt'
 import { SRT_LANGUAGES, translateSrt } from '../../lib/translate'
+import { isShareCancelled, shareVideo } from '../../lib/share'
 import SettingsPanel from './SettingsPanel'
 import AspectGuide from './AspectGuide'
 
@@ -28,6 +29,8 @@ export default function PrompterView() {
   const [translatedSrt, setTranslatedSrt] = useState<string | null>(null)
   const [translating, setTranslating] = useState(false)
   const [transError, setTransError] = useState<string | null>(null)
+  const [shareBusy, setShareBusy] = useState(false)
+  const [shareMsg, setShareMsg] = useState<string | null>(null)
   const transAbortRef = useRef<AbortController | null>(null)
 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -167,6 +170,28 @@ export default function PrompterView() {
 
   const recorder = useRecorder()
   const transcription = useTranscription()
+
+  const handleShareRecording = async () => {
+    if (!recorder.videoBlob || shareBusy) return
+    setShareBusy(true)
+    setShareMsg(null)
+    try {
+      const ext = recorder.videoBlob.type.includes('mp4') ? 'mp4' : 'webm'
+      const outcome = await shareVideo({
+        blob: recorder.videoBlob,
+        fileName: `alvoprompter-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`,
+        title: currentScript?.title || 'Vídeo do AlvoPrompter',
+        text: currentScript?.title,
+      })
+      setShareMsg(outcome === 'shared'
+        ? 'Compartilhamento aberto — escolha Instagram, YouTube, TikTok ou outro app.'
+        : 'O vídeo foi baixado. Abra a rede social para publicar.')
+    } catch (err) {
+      if (!isShareCancelled(err)) setShareMsg((err as Error).message)
+    } finally {
+      setShareBusy(false)
+    }
+  }
 
   const stopRecording = useCallback(() => {
     recorder.stop()
@@ -663,7 +688,10 @@ export default function PrompterView() {
                 )}
               </div>
             )}
-            <div className="flex justify-end gap-2">
+            {shareMsg && (
+              <p className="mb-3 text-right text-xs" style={{ color: 'var(--muted)' }}>{shareMsg}</p>
+            )}
+            <div className="flex flex-wrap justify-end gap-2">
               <button
                 onClick={() => setShowResult(false)}
                 className="rounded-lg border px-4 py-2 text-sm"
@@ -687,6 +715,14 @@ export default function PrompterView() {
                 style={{ borderColor: 'var(--accent-2)', color: 'var(--accent-2)' }}
               >
                 🎬 Editar vídeo
+              </button>
+              <button
+                onClick={() => void handleShareRecording()}
+                disabled={!recorder.videoBlob || shareBusy}
+                className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
+                style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+              >
+                {shareBusy ? 'Preparando…' : '↗ Compartilhar'}
               </button>
               <a
                 href={recorder.videoUrl}

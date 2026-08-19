@@ -24,7 +24,7 @@ export function channelInfo(id: SocialChannel): ChannelInfo {
 }
 
 export const POST_STATUS_LABEL: Record<ScheduledPost['status'], string> = {
-  scheduled: 'Agendado',
+  scheduled: 'Planejado',
   published: 'Publicado',
   cancelled: 'Cancelado',
   failed: 'Falhou',

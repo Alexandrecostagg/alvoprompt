@@ -18,6 +18,7 @@ import {
   whatsappShareUrl,
 } from '../../lib/scheduling'
 import { clearSyncPass, saveSyncPass, savedSyncPass } from '../../lib/syncWorker'
+import { isShareCancelled, shareDataUrl, shareText } from '../../lib/share'
 import type { PostStatus, ScheduledPost, SocialChannel } from '../../lib/types'
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -45,14 +46,14 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <div className="text-3xl">📅</div>
       <p className="text-sm" style={{ color: 'var(--muted)' }}>
-        Nenhum agendamento ainda. Crie seu primeiro post multi-canal.
+        Nenhum plano de publicação ainda. Prepare seu primeiro post multi-canal.
       </p>
       <button
         onClick={onCreate}
         className="rounded-lg px-4 py-2 text-sm font-semibold text-black transition-colors"
         style={{ background: 'var(--accent)' }}
       >
-        + Novo agendamento
+        + Planejar publicação
       </button>
     </div>
   )
@@ -67,6 +68,7 @@ export default function SchedulingHub() {
   const [syncOpen, setSyncOpen] = useState(false)
   const [pass, setPass] = useState('')
   const [selected, setSelected] = useState<{ post: ScheduledPost; channel: SocialChannel } | null>(null)
+  const [sharing, setSharing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const connected = (savedSyncPass()?.length ?? 0) >= 12
 
@@ -124,7 +126,7 @@ export default function SchedulingHub() {
 
   const save = async () => {
     if (!title.trim()) {
-      setMsg({ type: 'err', text: 'Dê um título ao agendamento.' })
+      setMsg({ type: 'err', text: 'Dê um título à publicação.' })
       return
     }
     if (!channels.length) {
@@ -150,7 +152,7 @@ export default function SchedulingHub() {
         updatedAt: Date.now(),
       })
       setShowForm(false)
-      setMsg({ type: 'ok', text: 'Agendamento criado!' })
+      setMsg({ type: 'ok', text: 'Plano de publicação salvo na agenda!' })
       await refresh()
     } catch (err) {
       setMsg({ type: 'err', text: (err as Error).message })
@@ -165,7 +167,7 @@ export default function SchedulingHub() {
   }
 
   const del = async (post: ScheduledPost) => {
-    if (!window.confirm(`Excluir o agendamento “${post.title}”?`)) return
+    if (!window.confirm(`Excluir o plano “${post.title}”?`)) return
     if (post.id != null) await removePost(post.id)
     await refresh()
   }
@@ -196,13 +198,41 @@ export default function SchedulingHub() {
     [posts],
   )
 
+  const shareSelected = async () => {
+    if (!selected || sharing) return
+    const caption = buildCaptionForChannel(selected.post, selected.channel)
+    setSharing(true)
+    setMsg(null)
+    try {
+      const outcome = selected.post.mediaDataUrl
+        ? await shareDataUrl(selected.post.mediaDataUrl, {
+            fileName: mediaFileName(selected.post),
+            title: selected.post.title,
+            text: caption,
+          })
+        : await shareText(selected.post.title, caption)
+      setMsg({
+        type: 'ok',
+        text: outcome === 'shared'
+          ? `Compartilhamento aberto. Escolha ${channelInfo(selected.channel).label} e confirme por lá. A legenda também ficou copiada para você colar, se necessário.`
+          : selected.post.mediaDataUrl
+            ? 'Seu navegador baixou o vídeo e copiou a legenda. Abra a rede social para publicar.'
+            : 'Legenda copiada. Abra a rede social para publicar.',
+      })
+    } catch (err) {
+      if (!isShareCancelled(err)) setMsg({ type: 'err', text: (err as Error).message })
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Agendamentos</h1>
+          <h1 className="text-2xl font-semibold text-white">Agenda de publicação</h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            Prepare vídeo e legenda para cada canal e acompanhe a publicação manual. {connected && '☁️ sync ativo.'}
+            Organize data, vídeo e legenda. Na hora de publicar, use o compartilhamento do celular. {connected && '☁️ sync ativo.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -219,17 +249,24 @@ export default function SchedulingHub() {
             className="rounded-lg px-4 py-2 text-sm font-semibold text-black transition-colors"
             style={{ background: 'var(--accent)' }}
           >
-            + Novo agendamento
+            + Planejar publicação
           </button>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border p-4" style={{ borderColor: 'var(--accent-2)', background: 'color-mix(in srgb, var(--accent-2) 8%, var(--panel))' }}>
+        <p className="text-sm font-semibold" style={{ color: 'var(--accent-2)' }}>↗ Publicação assistida</p>
+        <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+          O AlvoPrompter prepara o conteúdo e abre Instagram, YouTube, TikTok ou outro app instalado. Você revisa e confirma a publicação na própria rede social.
+        </p>
       </div>
 
       {syncOpen && (
         <div className="mb-6 rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
           <p className="text-sm" style={{ color: 'var(--text)' }}>
             {connected
-              ? 'Agendamentos sincronizados entre dispositivos com a mesma frase-chave.'
-              : 'Use uma frase-chave para sincronizar os agendamentos entre dispositivos (sem cadastro).'}
+              ? 'Planos sincronizados entre dispositivos com a mesma frase-chave.'
+              : 'Use uma frase-chave para sincronizar a agenda entre dispositivos (sem cadastro).'}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
@@ -277,7 +314,7 @@ export default function SchedulingHub() {
 
       {showForm && (
         <div className="mb-8 rounded-xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
-          <h2 className="mb-4 text-lg font-semibold text-white">Novo agendamento</h2>
+          <h2 className="mb-4 text-lg font-semibold text-white">Planejar publicação</h2>
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--muted)' }}>
@@ -399,7 +436,7 @@ export default function SchedulingHub() {
                 className="rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
                 style={{ background: 'var(--accent)' }}
               >
-                {busy ? 'Salvando…' : 'Agendar'}
+                {busy ? 'Salvando…' : 'Salvar na agenda'}
               </button>
               <button
                 onClick={() => setShowForm(false)}
@@ -472,7 +509,7 @@ export default function SchedulingHub() {
                   className="rounded-lg border px-2.5 py-1.5 text-xs"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
-                  ✍️ Legenda
+                  ↗ Publicar
                 </button>
                 {post.mediaDataUrl && (
                   <button
@@ -506,7 +543,7 @@ export default function SchedulingHub() {
               <div className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-semibold" style={{ color: 'var(--muted)' }}>
-                    Legenda pronta para {channelInfo(selected.channel).label}
+                    Publicar em {channelInfo(selected.channel).label}
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {post.channels.map((c) => (
@@ -533,14 +570,22 @@ export default function SchedulingHub() {
                 />
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
+                    onClick={() => void shareSelected()}
+                    disabled={sharing}
+                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
+                    style={{ background: 'var(--accent)' }}
+                  >
+                    {sharing ? 'Preparando…' : `↗ Compartilhar ${post.mediaDataUrl ? 'vídeo + legenda' : 'legenda'}`}
+                  </button>
+                  <button
                     onClick={() => {
                       void navigator.clipboard.writeText(buildCaptionForChannel(post, selected.channel))
                       setMsg({ type: 'ok', text: 'Legenda copiada!' })
                     }}
-                    className="rounded-lg px-3 py-1.5 text-xs font-semibold text-black"
-                    style={{ background: 'var(--accent)' }}
+                    className="rounded-lg border px-3 py-1.5 text-xs"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                   >
-                    Copiar
+                    Copiar legenda
                   </button>
                   {selected.channel === 'whatsapp' && (
                     <a

@@ -6,6 +6,7 @@ import { autoCutRanges, detectSpeechRanges, estimateWordTimings, totalRangesDura
 import { computeFacePath, cropCenteredOnFace, faceTrackingSupported, type FaceSample } from '../../lib/faceTrack'
 import { parseClipPrompt, type ClipPromptResult } from '../../lib/clipPrompt'
 import { generateAvatar } from '../../lib/cloudflare'
+import { isShareCancelled, shareVideo } from '../../lib/share'
 import {
   CAPTION_THEMES,
   computeCrop,
@@ -31,6 +32,7 @@ function fmt(seg: SrtSegment): string {
 
 export default function VideoEditor() {
   const recording = useAppStore((s) => s.recording)
+  const currentScript = useAppStore((s) => s.currentScript)
   const setRecording = useAppStore((s) => s.setRecording)
   const setView = useAppStore((s) => s.setView)
 
@@ -75,6 +77,9 @@ export default function VideoEditor() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [outUrl, setOutUrl] = useState<string | null>(null)
+  const [outBlob, setOutBlob] = useState<Blob | null>(null)
+  const [shareBusy, setShareBusy] = useState(false)
+  const [shareMsg, setShareMsg] = useState<string | null>(null)
   const [reframe, setReframe] = useState(false)
   const [eyeContact, setEyeContact] = useState(false)
   const facePathRef = useRef<FaceSample[] | null>(null)
@@ -282,6 +287,8 @@ export default function VideoEditor() {
     if (!recording || !meta || processing) return
     setError(null)
     setOutUrl(null)
+    setOutBlob(null)
+    setShareMsg(null)
     setProgress(0)
     const target = ASPECT_OPTIONS.find((a) => a.value === aspect)!
     const targetW = target.w ?? meta.w
@@ -343,12 +350,35 @@ export default function VideoEditor() {
       const url = URL.createObjectURL(blob)
       if (outUrl) URL.revokeObjectURL(outUrl)
       setOutUrl(url)
+      setOutBlob(blob)
       setProgress(1)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setError((err as Error).message)
     } finally {
       setProcessing(false)
       abortRef.current = null
+    }
+  }
+
+  const handleShare = async () => {
+    if (!outBlob || shareBusy) return
+    setShareBusy(true)
+    setShareMsg(null)
+    try {
+      const ext = outBlob.type.includes('mp4') ? 'mp4' : 'webm'
+      const outcome = await shareVideo({
+        blob: outBlob,
+        fileName: `alvoprompter-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`,
+        title: currentScript?.title || 'Vídeo editado no AlvoPrompter',
+        text: currentScript?.title,
+      })
+      setShareMsg(outcome === 'shared'
+        ? 'Compartilhamento aberto — escolha Instagram, YouTube, TikTok ou outro app.'
+        : 'O vídeo foi baixado. Abra a rede social para publicar.')
+    } catch (err) {
+      if (!isShareCancelled(err)) setShareMsg((err as Error).message)
+    } finally {
+      setShareBusy(false)
     }
   }
 
@@ -1179,12 +1209,21 @@ export default function VideoEditor() {
                 ✓ Vídeo gerado
               </p>
               <video src={outUrl} controls playsInline className="mb-3 max-h-48 w-full rounded-lg" />
+              {shareMsg && <p className="mb-2 text-xs" style={{ color: 'var(--muted)' }}>{shareMsg}</p>}
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => void handleShare()}
+                  disabled={!outBlob || shareBusy}
+                  className="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold text-black disabled:opacity-50"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  {shareBusy ? 'Preparando…' : '↗ Compartilhar vídeo'}
+                </button>
                 <a
                   href={outUrl}
                   download={`alvoprompter-${aspect === 'original' ? 'original' : aspect}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.webm`}
-                  className="flex-1 rounded-lg px-4 py-2 text-center text-sm font-semibold text-black"
-                  style={{ background: 'var(--accent)' }}
+                  className="rounded-lg border px-4 py-2 text-center text-sm"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
                   Baixar vídeo editado
                 </a>
