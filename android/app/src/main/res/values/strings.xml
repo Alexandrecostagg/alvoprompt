@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Alvoprompt</string>
-    <string name="title_activity_main">Alvoprompt</string>
+    <string name="app_name">AlvoPrompter</string>
+    <string name="title_activity_main">AlvoPrompter</string>
     <string name="package_name">com.alvoprompt.app</string>
     <string name="custom_url_scheme">com.alvoprompt.app</string>
 </resources>

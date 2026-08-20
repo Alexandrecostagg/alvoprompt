@@ -651,7 +651,7 @@ export default {
       return json({ error: 'Método não permitido.' }, 405)
     }
 
-    return new Response('alvoprompt api — use /transcribe | /tts | /translate | /media/:key', {
+    return new Response('AlvoPrompter API — use /transcribe | /tts | /translate | /media/:key', {
       headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS },
     })
   },

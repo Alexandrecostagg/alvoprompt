@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Alvoprompt</string>
+	<string>AlvoPrompter</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -67,8 +67,8 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>O Alvoprompt usa a câmera para gravar seus vídeos com o texto sobreposto.</string>
+	<string>O AlvoPrompter usa a câmera para gravar seus vídeos com o texto sobreposto.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>O Alvoprompt usa o microfone para capturar o áudio do vídeo e seguir sua fala.</string>
+	<string>O AlvoPrompter usa o microfone para capturar o áudio do vídeo e seguir sua fala.</string>
 </dict>
 </plist>

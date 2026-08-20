@@ -41,7 +41,7 @@ const HTML = `<!DOCTYPE html>
 <body>
 <main>
   <h1>Política de Privacidade — AlvoPrompter</h1>
-  <p class="muted">Data de vigência: 19 de agosto de 2026</p>
+  <p class="muted">Última atualização: 20 de agosto de 2026</p>
 
   <p>Esta Política de Privacidade descreve como o aplicativo <strong>AlvoPrompter</strong> ("nós", "nosso" ou "aplicativo"), desenvolvido por Alexandre Costa, trata informações quando você utiliza o aplicativo na web, Android ou iOS.</p>
 
@@ -101,10 +101,15 @@ export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/robots.txt") {
-      return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+      return new Response("User-agent: *\nAllow: /\n", {
+        headers: { "content-type": "text/plain", "cache-control": "no-store" },
+      });
     }
     return new Response(HTML, {
-      headers: { "content-type": "text/html; charset=utf-8" },
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+      },
     });
   },
 };
