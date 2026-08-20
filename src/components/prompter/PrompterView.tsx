@@ -31,6 +31,7 @@ export default function PrompterView() {
   const [transError, setTransError] = useState<string | null>(null)
   const [shareBusy, setShareBusy] = useState(false)
   const [shareMsg, setShareMsg] = useState<string | null>(null)
+  const [voiceFallback, setVoiceFallback] = useState(false)
   const transAbortRef = useRef<AbortController | null>(null)
 
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -42,6 +43,7 @@ export default function PrompterView() {
   const lineHRef = useRef(0)
   const activeIdxRef = useRef(-1)
   const pausedByVoiceRef = useRef(false)
+  const voiceFallbackRef = useRef(false)
   const lastPctAtRef = useRef(0)
 
   const content = currentScript?.content ?? ''
@@ -109,6 +111,7 @@ export default function PrompterView() {
     wpm: effectiveWpm,
     onFrame: applyFrame,
   })
+  const startEngine = engine.start
 
   const statusRef = useRef({ state: engine.state, fraction: 0 })
   statusRef.current = { state: engine.state, fraction: engine.fraction.current }
@@ -135,6 +138,7 @@ export default function PrompterView() {
   const handleSpeechActivity = useCallback(
     (active: boolean) => {
       const state = useAppStore.getState()
+      if (voiceFallbackRef.current) return
       if (!state.settings.cameraOn && state.settings.mode !== 'voice') return
       if (active) {
         if (pausedByVoiceRef.current) {
@@ -170,6 +174,23 @@ export default function PrompterView() {
 
   const recorder = useRecorder()
   const transcription = useTranscription()
+
+  useEffect(() => {
+    voiceFallbackRef.current = voiceFallback
+  }, [voiceFallback])
+
+  useEffect(() => {
+    if (settings.mode !== 'voice') {
+      setVoiceFallback(false)
+      return
+    }
+    if ((!voice.supported || voice.error) && (engine.state === 'running' || engine.state === 'paused')) {
+      pausedByVoiceRef.current = false
+      voiceFallbackRef.current = true
+      setVoiceFallback(true)
+      startEngine('fixed')
+    }
+  }, [engine.state, settings.mode, startEngine, voice.error, voice.supported])
 
   const handleShareRecording = async () => {
     if (!recorder.videoBlob || shareBusy) return
@@ -287,7 +308,11 @@ export default function PrompterView() {
       return
     }
     voice.reset()
-    engine.start()
+    const fallbackToAutomatic = settings.mode === 'voice' && !voice.supported
+    pausedByVoiceRef.current = false
+    voiceFallbackRef.current = fallbackToAutomatic
+    setVoiceFallback(fallbackToAutomatic)
+    engine.start(fallbackToAutomatic ? 'fixed' : undefined)
     if (settings.mode === 'voice' && voice.supported) voice.start()
   }, [engine, voice, settings.mode])
 
@@ -366,7 +391,10 @@ export default function PrompterView() {
     if (engine.state === 'paused') {
       return pausedByVoiceRef.current ? 'Pausado · aguardando sua voz' : 'Pausado'
     }
-    if (settings.mode === 'voice') return voice.listening ? 'Ouvindo sua voz...' : 'Rolando (voz)'
+    if (settings.mode === 'voice') {
+      if (voiceFallback) return 'Rolando (automático)'
+      return voice.listening ? 'Ouvindo sua voz...' : 'Rolando (voz)'
+    }
     if (settings.mode === 'timed') return 'Rolando (tempo-alvo)'
     return 'Rolando'
   })()
@@ -447,8 +475,10 @@ export default function PrompterView() {
       </div>
 
       {settings.mode === 'voice' && (!voice.supported || voice.error) ? (
-        <div className="border-b px-3 py-2 text-center text-xs" style={{ borderColor: 'var(--border)', background: 'rgba(251,191,36,.12)', color: voice.error ? 'var(--danger)' : 'var(--warn)' }} role="status">
-          {voice.error || 'Rolagem por voz indisponível neste aparelho. Use o modo de velocidade fixa.'}
+        <div className="border-b px-3 py-2 text-center text-xs" style={{ borderColor: 'var(--border)', background: 'rgba(251,191,36,.12)', color: 'var(--warn)' }} role="status">
+          {voice.error
+            ? `${voice.error} A rolagem automática foi ativada.`
+            : 'Rolagem por voz indisponível neste aparelho. A velocidade automática será usada.'}
         </div>
       ) : null}
 

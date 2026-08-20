@@ -5,6 +5,7 @@ import BrandMark from './components/BrandMark'
 import SyncControl from './components/SyncControl'
 import type { PlanId } from './lib/plans'
 import { observeUser, type User } from './lib/auth'
+import { initializeMetaPixel } from './lib/metaPixel'
 
 const ScriptLibrary = lazy(() => import('./components/library/ScriptLibrary'))
 const ScriptEditor = lazy(() => import('./components/editor/ScriptEditor'))
@@ -97,6 +98,7 @@ export default function App() {
   })
 
   useEffect(() => {
+    initializeMetaPixel()
     void useAppStore.getState().loadScripts()
     void useAppStore.getState().refreshWorkspaces()
   }, [])

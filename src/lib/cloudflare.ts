@@ -1,9 +1,9 @@
 /**
  * Cliente do Worker Cloudflare (transcrição Whisper, TTS/dublagem e tradução).
- * Desativado por padrão — só faz requisições quando o Worker está rodando
- * (wrangler dev --port 8787) ou VITE_CLOUDFLARE_API_BASE aponta para a URL publicada.
+ * Por padrão usa o Worker publicado do AlvoPrompter. Para desenvolvimento
+ * local, VITE_CLOUDFLARE_API_BASE pode apontar para o `wrangler dev`.
  */
-const DEFAULT_BASE = 'http://localhost:8787'
+const DEFAULT_BASE = 'https://alvoprompt-api.alexandrecostagg.workers.dev'
 
 async function optionalAuthToken(): Promise<string | null> {
   return (await import('./auth')).getOptionalIdToken()

@@ -49,15 +49,22 @@ export function usePrompterEngine({ mode, wordCount, wpm, onFrame }: EngineOptio
     rafRef.current = requestAnimationFrame(tick)
   }, [tick])
 
-  const start = useCallback(() => {
+  const start = useCallback((modeOverride?: ScrollMode) => {
     const { wordCount, mode, onFrame } = optsRef.current
-    if (wordCount === 0 || stateRef.current === 'running') return
+    const resolvedMode = modeOverride ?? mode
+    if (wordCount === 0) return
+    // Permite ativar a rolagem automática como fallback mesmo quando o
+    // reconhecimento de voz falha depois que o motor já foi iniciado.
+    if (stateRef.current === 'running') {
+      if (resolvedMode === 'fixed' || resolvedMode === 'timed') startFixed()
+      return
+    }
     if (stateRef.current === 'idle' || stateRef.current === 'done') {
       fractionRef.current = 0
       onFrame(0)
     }
     setEngineState('running')
-    if (mode === 'fixed' || mode === 'timed') startFixed()
+    if (resolvedMode === 'fixed' || resolvedMode === 'timed') startFixed()
   }, [setEngineState, startFixed])
 
   const pause = useCallback(() => {

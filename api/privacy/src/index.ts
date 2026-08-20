@@ -64,28 +64,32 @@ const HTML = `<!DOCTYPE html>
     <li><strong>Conta:</strong> nome, e-mail, identificador de usuário e estado de verificação são tratados pelo Firebase Authentication e vinculados ao cadastro do AlvoPrompter.</li>
     <li><strong>Equipe:</strong> nome do workspace, e-mails convidados e papéis de acesso são armazenados no Cloudflare D1 para aplicar as permissões no servidor.</li>
     <li><strong>Assinatura e uso:</strong> plano, estado da cobrança, contador mensal de ações de IA e identificadores técnicos do checkout/assinatura ficam no Cloudflare D1. O Asaas recebe os dados necessários para identificar o pagador e processar o checkout.</li>
+    <li><strong>Medição de campanhas na landing page:</strong> somente depois do seu consentimento, o Meta Pixel registra visitas e eventos do funil, como início do cadastro, seleção de plano, cadastro concluído e início do checkout. Não enviamos nome, e-mail, roteiro, gravação ou dados de pagamento nesses eventos. A Meta pode tratar identificadores técnicos, como endereço IP, navegador e cookies, conforme suas próprias políticas.</li>
   </ul>
   <p>Não coletamos sua lista de contatos nem localização precisa. A conta é necessária para sincronização SaaS, assinatura e colaboração; o prompter local pode ser usado sem conta.</p>
 
   <h2>4. Compartilhamento de dados</h2>
-  <p>Usamos Cloudflare, Firebase/Google, DeepSeek e Asaas como operadores de infraestrutura, autenticação, IA e pagamentos para entregar os recursos solicitados. O processamento de IA é transitório, mas dados de conta, assinatura e sincronização seguem as retenções necessárias ao serviço e às obrigações legais. Não vendemos dados nem os compartilhamos para publicidade.</p>
+  <p>Usamos Cloudflare, Firebase/Google, DeepSeek e Asaas como operadores de infraestrutura, autenticação, IA e pagamentos para entregar os recursos solicitados. O processamento de IA é transitório, mas dados de conta, assinatura e sincronização seguem as retenções necessárias ao serviço e às obrigações legais. Quando você autoriza a medição de campanhas, a Meta recebe apenas os eventos e identificadores técnicos descritos acima. Não vendemos seus dados pessoais.</p>
 
-  <h2>5. Segurança</h2>
+  <h2>5. Cookies e escolha de marketing</h2>
+  <p>O Meta Pixel fica desativado por padrão. Na primeira visita à landing page, você pode aceitar a medição ou manter somente o armazenamento essencial. Sua escolha fica salva no navegador e pode ser revista a qualquer momento pelo botão <strong>Cookies</strong> no rodapé da página. A recusa não impede o uso da landing page nem do aplicativo.</p>
+
+  <h2>6. Segurança</h2>
   <div class="card">
     <span class="tag">Criptografia em trânsito</span>
     <p>Todos os dados enviados do aplicativo para nossos servidores são transmitidos por conexões criptografadas (HTTPS/TLS).</p>
   </div>
 
-  <h2>6. Armazenamento e retenção</h2>
+  <h2>7. Armazenamento e retenção</h2>
   <p>Dados locais permanecem até você apagá-los ou remover o aplicativo. Conteúdo do sync legado expira no Cloudflare KV após 90 dias sem renovação. Dados de conta, workspace e assinatura permanecem enquanto a conta ou relação contratual estiver ativa e depois pelo prazo necessário para segurança, defesa de direitos e obrigações legais. Solicitações de IA são mantidas apenas conforme necessário para processamento e segurança dos respectivos provedores.</p>
 
-  <h2>7. Seus direitos</h2>
+  <h2>8. Seus direitos</h2>
   <p>Você pode apagar seus roteiros, vídeos e dados locais a qualquer momento no próprio aplicativo. Pode também solicitar acesso, correção, portabilidade ou exclusão dos dados de conta, observadas as retenções legais e financeiras. Para exercer esses direitos, entre em contato pelo e-mail <a href="mailto:alexandrecostagg@gmail.com">alexandrecostagg@gmail.com</a>.</p>
 
-  <h2>8. Menores de idade</h2>
+  <h2>9. Menores de idade</h2>
   <p>O aplicativo é destinado a maiores de 18 anos e não é dirigido a crianças. Não coletamos intencionalmente informações de menores de idade.</p>
 
-  <h2>9. Alterações nesta política</h2>
+  <h2>10. Alterações nesta política</h2>
   <p>Podemos atualizar esta Política de Privacidade periodicamente. A versão mais recente estará sempre disponível nesta página.</p>
 
   <p class="muted" style="margin-top:40px">© 2026 AlvoPrompter. Todos os direitos reservados.</p>

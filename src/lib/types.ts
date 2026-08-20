@@ -122,7 +122,9 @@ export interface PrompterSettings {
 }
 
 export const DEFAULT_SETTINGS: PrompterSettings = {
-  mode: 'voice',
+  // A rolagem fixa funciona em todos os navegadores e WebViews Android.
+  // O modo por voz continua disponível como opção nos ajustes.
+  mode: 'fixed',
   wpm: 150,
   targetMinutes: 3,
   fontSize: 48,

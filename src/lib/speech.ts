@@ -17,7 +17,7 @@ export type SpeechRecognitionEventLike = {
 
 export function getSpeechRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
   const w = window as unknown as Record<string, unknown>
-  return (w.SpeechRecognition || w.webkitSpeechRecognition) as
+  return ((w.SpeechRecognition || w.webkitSpeechRecognition) ?? null) as
     | (new () => SpeechRecognitionLike)
     | null
 }

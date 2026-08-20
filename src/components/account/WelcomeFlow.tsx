@@ -2,6 +2,7 @@ import { useState } from 'react'
 import BrandMark from '../BrandMark'
 import { firebaseConfigured, resetPassword, signIn, signUp } from '../../lib/auth'
 import { PLANS, type PlanId } from '../../lib/plans'
+import { trackMetaStandard } from '../../lib/metaPixel'
 
 type EntryStep = 'intro' | 'welcome' | 'signin' | 'signup'
 
@@ -65,8 +66,13 @@ export default function WelcomeFlow({ requestedPlan, onContinueLocal }: { reques
     setBusy(true)
     setMessage(null)
     try {
-      if (step === 'signup') await signUp(name, email, password)
-      else await signIn(email, password)
+      if (step === 'signup') {
+        await signUp(name, email, password)
+        trackMetaStandard('CompleteRegistration', {
+          content_name: requestedPlan ? `Cadastro para plano ${PLANS[requestedPlan].name}` : 'Conta gratuita',
+          status: true,
+        })
+      } else await signIn(email, password)
       setPassword('')
     } catch (error) {
       setMessage({ kind: 'error', text: friendlyAuthError(error) })

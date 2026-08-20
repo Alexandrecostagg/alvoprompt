@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { firebaseConfigured, observeUser, resetPassword, signIn, signUp, signUserOut, type User } from '../../lib/auth'
 import { formatPlanPrice, PAID_PLAN_IDS, PLANS, type PlanId } from '../../lib/plans'
 import { cancelSubscription, createCloudWorkspace, inviteWorkspaceMember, loadAccount, startCheckout, type AccountSummary } from '../../lib/saas'
+import { trackMetaStandard } from '../../lib/metaPixel'
 
 type AuthMode = 'signin' | 'signup'
 
@@ -86,6 +87,7 @@ export default function AccountPanel({ open, initialPlan, onClose }: { open: boo
     try {
       if (mode === 'signup') {
         await signUp(name, email, password)
+        trackMetaStandard('CompleteRegistration', { content_name: 'Conta gratuita', status: true })
         setMessage({ kind: 'ok', text: 'Conta criada. Enviamos um link de verificação para seu e-mail.' })
       } else {
         await signIn(email, password)
@@ -109,6 +111,12 @@ export default function AccountPanel({ open, initialPlan, onClose }: { open: boo
     setMessage(null)
     try {
       const { url } = await startCheckout(plan)
+      trackMetaStandard('InitiateCheckout', {
+        content_name: `Plano ${PLANS[plan].name}`,
+        content_category: 'Assinatura',
+        value: PLANS[plan].priceMonthly,
+        currency: 'BRL',
+      })
       window.location.assign(url)
     } catch (error) {
       setMessage({ kind: 'error', text: (error as Error).message })
