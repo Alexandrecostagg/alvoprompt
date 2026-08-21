@@ -82,7 +82,7 @@ function Segmented<T extends string>({
           className="min-h-9 shrink-0 rounded-lg px-3 py-1 text-xs font-medium transition-colors"
           style={{
             background: value === opt.value ? 'var(--accent)' : 'transparent',
-            color: value === opt.value ? 'black' : 'var(--muted)',
+            color: value === opt.value ? 'black' : 'var(--text)',
           }}
         >
           {opt.label}
@@ -194,17 +194,22 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
                   </select>
                 </Row>
                 <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-                  O texto rola conforme você fala e pausa quando você para. Sensibilidade menor
-                  tolera mais variações na fala.
+                  Ao tocar em “Iniciar”, o app solicita acesso ao microfone. Quando o reconhecimento
+                  de palavras não está disponível no Android, usa o som da sua voz: rola enquanto
+                  você fala e pausa no silêncio. Sensibilidade menor tolera mais variações.
                 </p>
               </>
             )}
-            <Row label="Continuar gravando após o fim (open mic)">
+            <Row label="Continuar gravando quando o texto terminar">
               <Toggle
                 checked={settings.openMic}
                 onChange={(openMic) => updateSettings({ openMic })}
               />
             </Row>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+              Ligado: a câmera e o microfone continuam gravando até você tocar em “Parar”.
+              Desligado: a gravação termina automaticamente junto com o roteiro.
+            </p>
           </section>
 
           <section>
@@ -320,15 +325,21 @@ export default function SettingsPanel({ settings, wordCount, onClose }: Settings
               />
             </Row>
             {settings.cameraOn && (
-              <Row label="Mirinha de contato visual">
-                <Toggle
-                  checked={settings.eyeContactDot}
-                  onChange={(eyeContactDot) => updateSettings({ eyeContactDot })}
-                />
-              </Row>
+              <>
+                <Row label="Ponto de contato visual">
+                  <Toggle
+                    checked={settings.eyeContactDot}
+                    onChange={(eyeContactDot) => updateSettings({ eyeContactDot })}
+                  />
+                </Row>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                  Mostra um pequeno ponto perto da lente para ajudar você a manter o olhar na câmera.
+                  É apenas um guia na tela e não aparece no vídeo gravado.
+                </p>
+              </>
             )}
             <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-              Mostra a área que será visível em cada plataforma na hora da gravação.
+              A guia de enquadramento mostra a área visível em cada formato de publicação.
             </p>
           </section>
 

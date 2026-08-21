@@ -59,7 +59,7 @@ const HTML = `<!DOCTYPE html>
   <ul>
     <li><strong>Sincronização:</strong> roteiros, agendamentos e workspaces escolhidos para sincronização são armazenados no Cloudflare KV por até 90 dias desde a última sincronização. A frase-chave funciona como credencial de acesso.</li>
     <li><strong>Texto para IA:</strong> pedidos de geração ou melhoria de roteiro são enviados pelo nosso Worker à DeepSeek. Traduções e síntese de voz são processadas pelo Cloudflare Workers AI.</li>
-    <li><strong>Áudio:</strong> arquivos enviados para transcrição são processados pelo Cloudflare Workers AI. As amostras de voz do AI Twin permanecem locais e não treinam um modelo de clonagem.</li>
+    <li><strong>Áudio:</strong> arquivos enviados para transcrição são processados pelo Cloudflare Workers AI. As amostras de voz do Avatar IA permanecem locais e não treinam um modelo de clonagem.</li>
     <li><strong>Avatar:</strong> somente a descrição textual é enviada para gerar uma imagem. A animação do avatar e a exportação do vídeo acontecem localmente no aparelho.</li>
     <li><strong>Conta:</strong> nome, e-mail, identificador de usuário e estado de verificação são tratados pelo Firebase Authentication e vinculados ao cadastro do AlvoPrompter.</li>
     <li><strong>Equipe:</strong> nome do workspace, e-mails convidados e papéis de acesso são armazenados no Cloudflare D1 para aplicar as permissões no servidor.</li>

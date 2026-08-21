@@ -20,6 +20,17 @@ const SILENCE_MS = 1800
 const AHEAD_WINDOW = 8
 const BEHIND_WINDOW = 3
 
+export type VoiceTrackingMode = 'recognition' | 'audio-level' | 'none'
+
+function initialTrackingMode(): VoiceTrackingMode {
+  if (getSpeechRecognitionCtor()) return 'recognition'
+  if (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.mediaDevices?.getUserMedia === 'function'
+  ) return 'audio-level'
+  return 'none'
+}
+
 export function useVoiceTrack({
   words,
   enabled,
@@ -29,7 +40,7 @@ export function useVoiceTrack({
   onSpeechActivity,
   onUtterance,
 }: VoiceTrackOptions) {
-  const [supported] = useState(() => getSpeechRecognitionCtor() !== null)
+  const [mode, setMode] = useState<VoiceTrackingMode>(initialTrackingMode)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,6 +50,11 @@ export function useVoiceTrack({
   const activeRef = useRef(false)
   const silenceTimerRef = useRef<number | null>(null)
   const exactMapRef = useRef<Map<string, number[]>>(new Map())
+  const micStreamRef = useRef<MediaStream | null>(null)
+  const micContextRef = useRef<AudioContext | null>(null)
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
+  const micAnalyserRef = useRef<AnalyserNode | null>(null)
+  const micFrameRef = useRef(0)
   const cbRef = useRef({ words, onWordMatch, onSpeechActivity, sensitivity, lang, onUtterance })
   cbRef.current = { words, onWordMatch, onSpeechActivity, sensitivity, lang, onUtterance }
 
@@ -121,16 +137,83 @@ export function useVoiceTrack({
     [markActive, processText],
   )
 
+  const releaseAudioLevel = useCallback(() => {
+    cancelAnimationFrame(micFrameRef.current)
+    micSourceRef.current?.disconnect()
+    micSourceRef.current = null
+    micAnalyserRef.current = null
+    micStreamRef.current?.getTracks().forEach((track) => track.stop())
+    micStreamRef.current = null
+    if (micContextRef.current) void micContextRef.current.close()
+    micContextRef.current = null
+  }, [])
+
   const stop = useCallback(() => {
     runningRef.current = false
     recognitionRef.current?.abort()
     recognitionRef.current = null
+    releaseAudioLevel()
     setListening(false)
     if (silenceTimerRef.current != null) window.clearTimeout(silenceTimerRef.current)
     activeRef.current = false
-  }, [])
+  }, [releaseAudioLevel])
+
+  const startAudioLevel = useCallback(async () => {
+    if (runningRef.current || !navigator.mediaDevices?.getUserMedia) return
+    setError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      })
+      const AudioCtor = window.AudioContext
+      const context = new AudioCtor()
+      const source = context.createMediaStreamSource(stream)
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 512
+      analyser.smoothingTimeConstant = 0.72
+      source.connect(analyser)
+      await context.resume()
+
+      micStreamRef.current = stream
+      micContextRef.current = context
+      micSourceRef.current = source
+      micAnalyserRef.current = analyser
+      runningRef.current = true
+      setListening(true)
+      cbRef.current.onSpeechActivity(false)
+
+      const data = new Uint8Array(analyser.fftSize)
+      const sampleLevel = () => {
+        if (!runningRef.current || micAnalyserRef.current !== analyser) return
+        analyser.getByteTimeDomainData(data)
+        let sum = 0
+        for (let i = 0; i < data.length; i++) {
+          const value = (data[i]! - 128) / 128
+          sum += value * value
+        }
+        const rms = Math.sqrt(sum / data.length)
+        if (rms > 0.025) markActive()
+        micFrameRef.current = requestAnimationFrame(sampleLevel)
+      }
+      sampleLevel()
+    } catch (err) {
+      releaseAudioLevel()
+      runningRef.current = false
+      setListening(false)
+      const name = (err as DOMException).name
+      setError(
+        name === 'NotAllowedError' || name === 'SecurityError'
+          ? 'Permissão de microfone negada. Autorize o microfone para usar a rolagem por voz.'
+          : 'Não foi possível abrir o microfone para acompanhar sua voz.',
+      )
+    }
+  }, [markActive, releaseAudioLevel])
 
   const start = useCallback(() => {
+    if (mode === 'audio-level') {
+      void startAudioLevel()
+      return
+    }
     const Ctor = getSpeechRecognitionCtor()
     if (!Ctor || runningRef.current) return
     setError(null)
@@ -152,7 +235,15 @@ export function useVoiceTrack({
       }, 150)
     }
     rec.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      if (event.error === 'service-not-allowed' || event.error === 'language-not-supported') {
+        runningRef.current = false
+        recognitionRef.current = null
+        setListening(false)
+        setMode('audio-level')
+        void startAudioLevel()
+        return
+      }
+      if (event.error === 'not-allowed') {
         runningRef.current = false
         setListening(false)
         setError('Permissão de microfone negada. Habilite o microfone para usar a rolagem por voz.')
@@ -168,7 +259,7 @@ export function useVoiceTrack({
     } catch {
       setError('Não foi possível iniciar o reconhecimento de voz neste navegador.')
     }
-  }, [handleResult])
+  }, [handleResult, mode, startAudioLevel])
 
   const reset = useCallback(() => {
     pointerRef.current = 0
@@ -180,5 +271,5 @@ export function useVoiceTrack({
 
   useEffect(() => () => stop(), [stop])
 
-  return { supported, listening, error, start, stop, reset }
+  return { supported: mode !== 'none', mode, listening, error, start, stop, reset }
 }

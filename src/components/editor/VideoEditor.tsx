@@ -704,7 +704,7 @@ export default function VideoEditor() {
               )}
               <div className="rounded-xl border p-3" style={{ borderColor: 'var(--border)', background: 'rgba(0,0,0,0.2)' }}>
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-2)' }}>
-                  🪄 Avatar IA (AI Twin)
+                  🪄 Avatar IA
                 </p>
                 <textarea
                   value={avatarPrompt}

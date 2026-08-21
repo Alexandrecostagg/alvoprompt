@@ -308,7 +308,7 @@ export default function ControlRoom() {
               </p>
               <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
                 Abra o prompter para apresentar. O controle poderá iniciar/pausar, avançar o texto,
-                espelhar, ativar o open mic e enviar novos roteiros.
+                espelhar, continuar gravando após o texto e enviar novos roteiros.
               </p>
               <div className="mt-4 flex gap-2">
                 <button

@@ -73,6 +73,7 @@ export class TalkingAvatar {
   private buffer: AudioBuffer | null = null
   private source: AudioBufferSourceNode | null = null
   private raf = 0
+  private syntheticSpeaking = false
   private startTime = 0
   private pausedAt = 0
   private recording = false
@@ -99,6 +100,7 @@ export class TalkingAvatar {
     this.onEnded = options.onEnded
     canvas.width = options.width
     canvas.height = options.height
+    this.draw(performance.now() / 1000, 0)
   }
 
   get duration(): number {
@@ -142,7 +144,31 @@ export class TalkingAvatar {
     this.tick()
   }
 
+  /** Anima a fala quando o áudio vem da voz nativa do aparelho. */
+  startVisualSpeech(): void {
+    cancelAnimationFrame(this.raf)
+    this.syntheticSpeaking = true
+    const startedAt = performance.now()
+    const loop = (now: number) => {
+      if (!this.syntheticSpeaking) return
+      const elapsed = now - startedAt
+      const cadence = Math.sin(elapsed * 0.018)
+      const syllables = Math.sin(elapsed * 0.041)
+      const amp = 0.08 + Math.max(0, cadence * 0.06) + Math.max(0, syllables * 0.04)
+      this.draw(now / 1000, amp)
+      this.raf = requestAnimationFrame(loop)
+    }
+    this.raf = requestAnimationFrame(loop)
+  }
+
+  stopVisualSpeech(): void {
+    this.syntheticSpeaking = false
+    cancelAnimationFrame(this.raf)
+    this.draw(performance.now() / 1000, 0)
+  }
+
   pause(): void {
+    this.syntheticSpeaking = false
     if (this.source && this.audioCtx) {
       this.pausedAt = this.currentTime
       try {
@@ -155,9 +181,11 @@ export class TalkingAvatar {
       this.audioCtx.suspend()
     }
     cancelAnimationFrame(this.raf)
+    this.draw(performance.now() / 1000, 0)
   }
 
   stop(): void {
+    this.syntheticSpeaking = false
     this.pause()
     this.pausedAt = 0
     this.ended = false
@@ -198,20 +226,20 @@ export class TalkingAvatar {
     let x = (w - drawW) / 2
     let y = focus * (h - drawH)
 
-    // respiração + boca sincronizada com a amplitude
+    // Movimento corporal de repouso. A boca continua sincronizada mesmo no modo parado.
     let sx = 1
     let sy = 1
     let bob = 0
-    if (motion === 'breathing' || motion === 'subtle') {
-      const breath = Math.sin(t * 0.9) * 0.01
+    if (motion === 'breathing') {
+      const breath = Math.sin(t * 0.9) * 0.012
       sx = 1 + breath
       sy = 1 + breath
-      if (amp > 0.02) {
-        const speech = amp * 0.05
-        sy *= 1 + speech * Math.sin(t * 9)
-        sx *= 1 - speech * 0.4
-      }
       bob = Math.sin(t * 1.3) * Math.max(2, h * 0.004)
+    } else if (motion === 'subtle') {
+      const breath = Math.sin(t * 0.75) * 0.004
+      sx = 1 + breath
+      sy = 1 + breath
+      bob = Math.sin(t * 1.1) * Math.max(0.7, h * 0.0015)
     }
     const cx = x + drawW / 2
     const cy = y + drawH / 2
@@ -219,6 +247,34 @@ export class TalkingAvatar {
     ctx.scale(sx, sy)
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
     ctx.setTransform(1, 0, 0, 1, 0, 0)
+
+    // Lip sync local para retratos frontais. A região inferior do rosto é
+    // deformada pela amplitude do áudio, em vez de ampliar a foto inteira.
+    if (amp > 0.015) {
+      const mouthX = Math.max(w * 0.18, Math.min(w * 0.82, x + drawW * 0.5))
+      const mouthY = Math.max(h * 0.38, Math.min(h * 0.78, y + drawH * 0.61))
+      const mouthW = Math.max(18, Math.min(w * 0.17, drawW * 0.14))
+      const mouthH = Math.max(8, Math.min(h * 0.035, drawH * 0.032))
+      const open = Math.min(1, Math.max(0, (amp - 0.015) * 3.8))
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.ellipse(mouthX, mouthY, mouthW * 0.62, mouthH * 1.7, 0, 0, Math.PI * 2)
+      ctx.clip()
+      ctx.translate(mouthX, mouthY)
+      ctx.scale(1, 1 + open * 0.22)
+      ctx.translate(-mouthX, -mouthY)
+      ctx.drawImage(img, x, y, drawW, drawH)
+      ctx.restore()
+
+      ctx.save()
+      ctx.globalAlpha = 0.2 + open * 0.42
+      ctx.fillStyle = '#16090d'
+      ctx.beginPath()
+      ctx.ellipse(mouthX, mouthY + mouthH * 0.15, mouthW * 0.36, mouthH * (0.14 + open * 0.7), 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
 
     // indicador de "falando" sutil no canto
     if (amp > 0.05) {
@@ -292,6 +348,7 @@ export class TalkingAvatar {
   }
 
   destroy(): void {
+    this.syntheticSpeaking = false
     cancelAnimationFrame(this.raf)
     if (this.source) {
       try {

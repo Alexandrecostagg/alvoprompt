@@ -173,7 +173,7 @@ export default function App() {
           <DesktopNavButton onClick={() => navigate('control')}>Control Room</DesktopNavButton>
           <DesktopNavButton active={view === 'scheduling'} onClick={() => navigate('scheduling')}>Agenda</DesktopNavButton>
           <DesktopNavButton active={view === 'workspaces'} onClick={() => navigate('workspaces')}>Equipe</DesktopNavButton>
-          <DesktopNavButton active={view === 'ai-twin'} onClick={() => navigate('ai-twin')}>AI Twin</DesktopNavButton>
+          <DesktopNavButton active={view === 'ai-twin'} onClick={() => navigate('ai-twin')}>Avatar IA</DesktopNavButton>
         </nav>
         <div className="flex items-center gap-2">
           <button onClick={() => setAccountOpen(true)} className="flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}><Icon name="account" />Conta</button>
@@ -202,7 +202,7 @@ export default function App() {
               <button onClick={() => setMoreOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: 'var(--bg)', color: 'var(--muted)' }} aria-label="Fechar">×</button>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {([['control', 'Control Room', 'control'], ['team', 'Equipe', 'workspaces'], ['twin', 'AI Twin', 'ai-twin']] as const).map(([icon, label, target]) => (
+              {([['control', 'Control Room', 'control'], ['team', 'Equipe', 'workspaces'], ['twin', 'Avatar IA', 'ai-twin']] as const).map(([icon, label, target]) => (
                 <button key={target} onClick={() => navigate(target)} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 text-xs font-semibold" style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}>
                   <Icon name={icon} className="h-6 w-6" />{label}
                 </button>

@@ -3,7 +3,7 @@
  *
  * Endpoints:
  *   POST /transcribe  multipart: audio=<arquivo>, lang=<código ISO>  → { result: { text, words } }
- *   POST /tts         JSON: { text, lang }                            → áudio WAV (MeloTTS → fallback Deepgram Aura)
+ *   POST /tts         JSON: { text, lang }                            → áudio (MeloTTS → Grok TTS em PT-BR)
  *   POST /translate   JSON: { text, sourceLang, targetLang }          → { translated_text }
  *   POST /import-url  JSON: { url }                                   → { text, title } (YouTube/GDocs/URL genérica)
  *   POST /avatar      JSON: { prompt }                                → imagem PNG (Flux)
@@ -449,7 +449,8 @@ export default {
       const { text, lang } = (await request.json()) as { text?: string; lang?: string }
       if (!text) return json({ error: 'Campo "text" ausente.' }, 400)
       if (text.length > 5_000) return json({ error: 'Texto acima do limite de 5.000 caracteres.' }, 413)
-      const langCode = lang ?? 'pt-br'
+      const requestedLang = (lang ?? 'pt-BR').trim().replace('_', '-') || 'pt-BR'
+      const langCode = requestedLang.toLowerCase().split('-')[0] || 'pt'
 
       try {
         const result = (await env.AI.run('@cf/myshell-ai/melotts', {
@@ -460,7 +461,40 @@ export default {
           headers: { 'Content-Type': 'audio/wav', ...CORS_HEADERS },
         })
       } catch {
-        // tenta o modelo de fala da Deepgram
+        // Aura 1 tem vozes em inglês. Para outros idiomas, falhar é melhor
+        // do que entregar ao usuário uma pronúncia inglesa incorreta.
+      }
+
+      if (langCode === 'pt') {
+        try {
+          const language = requestedLang.toLowerCase() === 'pt-pt' ? 'pt-PT' : 'pt-BR'
+          const result = (await env.AI.run('xai/grok-tts', {
+            text,
+            language,
+            voice_id: 'ara',
+            text_normalization: true,
+            output_format: { codec: 'mp3', sample_rate: 24000, bit_rate: 128000 },
+          })) as { audio?: string; result?: { audio?: string } }
+          const audioUrl = result.audio ?? result.result?.audio
+          if (!audioUrl) throw new Error('O provedor não retornou o arquivo de áudio.')
+          const audio = await fetch(audioUrl)
+          if (!audio.ok || !audio.body) throw new Error(`Falha ao obter o áudio (${audio.status}).`)
+          return new Response(audio.body, {
+            headers: {
+              'Content-Type': audio.headers.get('Content-Type') ?? 'audio/mpeg',
+              ...CORS_HEADERS,
+            },
+          })
+        } catch (err) {
+          return json(
+            { error: `A voz em português está temporariamente indisponível: ${(err as Error).message}` },
+            503,
+          )
+        }
+      }
+
+      if (langCode !== 'en') {
+        return json({ error: `Ainda não há uma voz configurada para o idioma “${requestedLang}”.` }, 422)
       }
 
       try {

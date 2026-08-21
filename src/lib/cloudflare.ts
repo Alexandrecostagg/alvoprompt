@@ -50,14 +50,17 @@ export async function transcribeAudio(blob: Blob, lang: string): Promise<Whisper
   return payload.result
 }
 
-export async function speakWithTts(text: string, lang = 'pt-br'): Promise<Blob> {
+export async function speakWithTts(text: string, lang = 'pt'): Promise<Blob> {
   const token = await optionalAuthToken()
   const res = await fetch(`${apiBase()}/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ text, lang }),
   })
-  if (!res.ok) throw new Error(`Erro ${res.status} no TTS`)
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null
+    throw new Error(body?.error ?? `Erro ${res.status} no TTS`)
+  }
   return res.blob()
 }
 

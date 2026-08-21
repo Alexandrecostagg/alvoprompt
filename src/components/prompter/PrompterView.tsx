@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useAppStore } from '../../store/useAppStore'
 import { splitWords } from '../../lib/text'
 import { usePrompterEngine } from '../../hooks/usePrompterEngine'
-import { useVoiceTrack } from '../../hooks/useVoiceTrack'
+import { useVoiceTrack, type VoiceTrackingMode } from '../../hooks/useVoiceTrack'
 import { useGamepad } from '../../hooks/useGamepad'
 import { useRecorder, formatElapsed } from '../../hooks/useRecorder'
 import { useTranscription } from '../../hooks/useTranscription'
@@ -44,6 +44,7 @@ export default function PrompterView() {
   const activeIdxRef = useRef(-1)
   const pausedByVoiceRef = useRef(false)
   const voiceFallbackRef = useRef(false)
+  const voiceModeRef = useRef<VoiceTrackingMode>('none')
   const lastPctAtRef = useRef(0)
 
   const content = currentScript?.content ?? ''
@@ -141,6 +142,11 @@ export default function PrompterView() {
       if (voiceFallbackRef.current) return
       if (!state.settings.cameraOn && state.settings.mode !== 'voice') return
       if (active) {
+        if (voiceModeRef.current === 'audio-level') {
+          pausedByVoiceRef.current = false
+          engine.start('fixed')
+          return
+        }
         if (pausedByVoiceRef.current) {
           pausedByVoiceRef.current = false
           engine.start()
@@ -174,6 +180,7 @@ export default function PrompterView() {
 
   const recorder = useRecorder()
   const transcription = useTranscription()
+  voiceModeRef.current = voice.mode
 
   useEffect(() => {
     voiceFallbackRef.current = voiceFallback
@@ -393,6 +400,9 @@ export default function PrompterView() {
     }
     if (settings.mode === 'voice') {
       if (voiceFallback) return 'Rolando (automático)'
+      if (voice.mode === 'audio-level') {
+        return voice.listening ? 'Microfone ativo · siga falando' : 'Preparando microfone...'
+      }
       return voice.listening ? 'Ouvindo sua voz...' : 'Rolando (voz)'
     }
     if (settings.mode === 'timed') return 'Rolando (tempo-alvo)'
@@ -426,7 +436,8 @@ export default function PrompterView() {
         <div
           className="absolute left-1/2 top-1/2 z-20 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90"
           style={{ background: 'rgba(34,211,238,0.85)', boxShadow: '0 0 10px rgba(0,0,0,0.7)' }}
-          title="Mirinha de contato visual"
+          title="Ponto de contato visual"
+          aria-label="Ponto de contato visual próximo à câmera"
         />
       )}
       <AspectGuide ratio={settings.aspectGuide} dimOutside />
@@ -439,7 +450,7 @@ export default function PrompterView() {
         className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b px-3 pb-2 pt-2 sm:px-4"
         style={{ borderColor: 'var(--border)', background: 'rgba(10,12,18,0.94)', paddingTop: 'max(.5rem, env(safe-area-inset-top))' }}
       >
-        <button onClick={() => setView('library')} className="grid h-11 w-11 place-items-center rounded-2xl border text-lg" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }} aria-label="Sair do prompter">←</button>
+        <button onClick={() => setView('library')} className="grid h-11 w-11 place-items-center rounded-2xl border text-lg font-bold" style={{ borderColor: 'rgba(255,255,255,.28)', color: '#fff', background: 'rgba(255,255,255,.08)' }} aria-label="Sair do prompter">←</button>
         <div className="min-w-0 text-center">
           <p className="truncate text-sm font-semibold text-white on-dark">{currentScript.title || 'Sem título'}</p>
           <span
@@ -448,7 +459,7 @@ export default function PrompterView() {
               background:
                 engine.state === 'running' ? 'rgba(52,211,153,0.15)' : 'var(--panel)',
               color: engine.state === 'running' ? 'var(--ok)' : 'var(--muted)',
-              border: '1px solid var(--border)',
+              border: '1px solid rgba(255,255,255,.24)',
             }}
           >
             {statusLabel}
@@ -457,16 +468,16 @@ export default function PrompterView() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleFullscreen}
-            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg"
-            style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg font-bold"
+            style={{ borderColor: 'rgba(255,255,255,.28)', color: '#fff', background: 'rgba(255,255,255,.08)' }}
             aria-label="Alternar tela cheia"
           >
             ⛶
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg"
-            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+            className="grid h-11 w-11 place-items-center rounded-2xl border text-lg font-bold"
+            style={{ borderColor: 'rgba(255,255,255,.32)', color: '#fff', background: 'rgba(255,255,255,.12)' }}
             aria-label="Abrir ajustes do prompter"
           >
             ⚙
@@ -479,6 +490,12 @@ export default function PrompterView() {
           {voice.error
             ? `${voice.error} A rolagem automática foi ativada.`
             : 'Rolagem por voz indisponível neste aparelho. A velocidade automática será usada.'}
+        </div>
+      ) : null}
+
+      {settings.mode === 'voice' && voice.supported && !voice.error && voice.mode === 'audio-level' ? (
+        <div className="border-b px-3 py-2 text-center text-xs" style={{ borderColor: 'rgba(34,211,238,.3)', background: 'rgba(34,211,238,.1)', color: '#a5f3fc' }} role="status">
+          Modo compatível com Android: o texto avança enquanto o microfone detecta sua fala e pausa no silêncio.
         </div>
       ) : null}
 

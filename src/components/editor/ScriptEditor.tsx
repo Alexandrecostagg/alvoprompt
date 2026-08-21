@@ -83,7 +83,7 @@ export default function ScriptEditor() {
     if (!currentScript.content.trim()) return
     setTtsBusy(true)
     try {
-      const blob = await speakWithTts(currentScript.content.trim(), 'pt-br')
+      const blob = await speakWithTts(currentScript.content.trim(), 'pt')
       if (audio) {
         audio.src = URL.createObjectURL(blob)
         await audio.play()
@@ -175,6 +175,10 @@ export default function ScriptEditor() {
 
       <input
         value={currentScript.title}
+        lang="pt-BR"
+        spellCheck
+        autoCorrect="on"
+        autoCapitalize="sentences"
         onChange={(e) => {
           useAppStore.getState().selectScript({ ...currentScript, title: e.target.value })
           setDirty(true)
@@ -186,6 +190,10 @@ export default function ScriptEditor() {
 
       <textarea
         value={currentScript.content}
+        lang="pt-BR"
+        spellCheck
+        autoCorrect="on"
+        autoCapitalize="sentences"
         onChange={(e) => {
           useAppStore.getState().selectScript({ ...currentScript, content: e.target.value })
           setDirty(true)

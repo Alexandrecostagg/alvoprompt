@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../../store/useAppStore'
 import {
   TalkingAvatar,
@@ -49,6 +49,8 @@ export default function AiTwin() {
   const [recSeconds, setRecSeconds] = useState(0)
   const [pendingSamples, setPendingSamples] = useState<VoiceSample[]>([])
   const [voiceName, setVoiceName] = useState('')
+  const [avatarPreview, setAvatarPreview] = useState<AvatarTwin | null>(null)
+  const deviceSpeechRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   const avatar = avatars.find((a) => a.id === avatarId) ?? null
   const voice = voices.find((v) => v.id === voiceId) ?? null
@@ -66,6 +68,8 @@ export default function AiTwin() {
 
   useEffect(() => {
     return () => {
+      window.speechSynthesis?.cancel()
+      deviceSpeechRef.current = null
       talk.current?.destroy()
       talk.current = null
     }
@@ -98,7 +102,46 @@ export default function AiTwin() {
   useEffect(() => {
     if (avatar) setupCanvas(ASPECTS[aspect].w, ASPECTS[aspect].h)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [avatar, aspect])
+  }, [avatar, aspect, motion])
+
+  useEffect(() => {
+    loadedBlobRef.current = null
+    window.speechSynthesis?.cancel()
+    deviceSpeechRef.current = null
+    talk.current?.stop()
+    setPlayer({ state: 'idle', at: 0 })
+    setProgress(0)
+  }, [source, text, voiceId, sampleId, recording])
+
+  const speakOnDevice = useCallback(() => {
+    if (!('speechSynthesis' in window) || !text.trim()) {
+      throw new Error('Este aparelho não oferece uma voz em português para a prévia.')
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text.trim())
+    const availableVoices = window.speechSynthesis.getVoices()
+    const portugueseVoice = availableVoices.find((item) => item.lang.toLowerCase() === 'pt-br')
+      ?? availableVoices.find((item) => item.lang.toLowerCase().startsWith('pt'))
+    utterance.lang = portugueseVoice?.lang ?? 'pt-BR'
+    if (portugueseVoice) utterance.voice = portugueseVoice
+    utterance.rate = 1
+    utterance.onend = () => {
+      talk.current?.stopVisualSpeech()
+      deviceSpeechRef.current = null
+      setPlayer({ state: 'idle', at: 0 })
+    }
+    utterance.onerror = () => {
+      talk.current?.stopVisualSpeech()
+      deviceSpeechRef.current = null
+      setPlayer({ state: 'idle', at: 0 })
+      setMsg({ type: 'err', text: 'A voz em português do aparelho não conseguiu reproduzir este texto.' })
+    }
+    deviceSpeechRef.current = utterance
+    talk.current?.startVisualSpeech()
+    setPlayer({ state: 'playing', at: 0 })
+    setMsg({ type: 'ok', text: 'Prévia em português usando a voz instalada no seu aparelho.' })
+    window.speechSynthesis.speak(utterance)
+  }, [text])
 
   const savePhotoAvatar = async (file: File) => {
     setBusy(true)
@@ -161,8 +204,10 @@ export default function AiTwin() {
     try {
       const sample = await recorder.stop()
       setPendingSamples((prev) => [...prev, sample])
+      setVoiceName((current) => current || `Minha voz ${voices.length + 1}`)
       setRecorder(null)
       setRecSeconds(0)
+      setMsg({ type: 'ok', text: 'Amostra gravada. Confira o áudio, ajuste o nome e toque em “Salvar perfil”.' })
     } catch (err) {
       setMsg({ type: 'err', text: (err as Error).message })
       setRecorder(null)
@@ -183,10 +228,15 @@ export default function AiTwin() {
     try {
       const id = await createVoiceProfile(voiceName.trim(), pendingSamples, 'pt-BR')
       setVoiceId(id)
+      setSource('sample')
+      setSampleId(0)
       setPendingSamples([])
       setVoiceName('')
       await refresh()
-      setMsg({ type: 'ok', text: 'Perfil de voz salvo!' })
+      setMsg({
+        type: 'ok',
+        text: `Perfil “${voiceName.trim()}” salvo e selecionado. Ele reproduz sua gravação; não clona a voz para textos novos.`,
+      })
     } catch (err) {
       setMsg({ type: 'err', text: (err as Error).message })
     } finally {
@@ -203,7 +253,7 @@ export default function AiTwin() {
       setBusy(true)
       setMsg(null)
       try {
-        return await speakWithTts(text.trim(), 'pt-br')
+        return await speakWithTts(text.trim(), 'pt')
       } finally {
         setBusy(false)
       }
@@ -237,16 +287,31 @@ export default function AiTwin() {
       setPlayer({ state: 'playing', at: 0 })
     } catch (err) {
       setBusy(false)
+      if (source === 'tts') {
+        try {
+          speakOnDevice()
+          return
+        } catch (deviceError) {
+          setMsg({ type: 'err', text: (deviceError as Error).message })
+          return
+        }
+      }
       setMsg({ type: 'err', text: (err as Error).message })
     }
   }
 
   const pause = () => {
+    if (deviceSpeechRef.current) {
+      window.speechSynthesis.cancel()
+      deviceSpeechRef.current = null
+    }
     talk.current?.pause()
     setPlayer((p) => ({ ...p, state: 'paused' }))
   }
 
   const stopPlay = () => {
+    window.speechSynthesis?.cancel()
+    deviceSpeechRef.current = null
     talk.current?.stop()
     setPlayer({ state: 'idle', at: 0 })
     setProgress(0)
@@ -284,17 +349,22 @@ export default function AiTwin() {
       setMsg({ type: 'ok', text: 'Gravando… toque em "⏹ Parar" para finalizar.' })
     } catch (err) {
       setIsRecording(false)
-      setMsg({ type: 'err', text: (err as Error).message })
+      setMsg({
+        type: 'err',
+        text: source === 'tts'
+          ? 'A prévia em português funciona com a voz do aparelho. Para exportar vídeo com áudio, escolha uma gravação do prompter ou uma amostra da sua voz.'
+          : (err as Error).message,
+      })
     }
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8" lang="pt-BR">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-white">AI Twin</h1>
+        <h1 className="text-2xl font-semibold text-white">Avatar IA</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          Seu avatar falante: rosto (foto ou IA) + voz (amostras gravadas) → vídeo gerado localmente,
-          sem servidor.
+          Combine um rosto, um áudio e um movimento para criar um vídeo de avatar. A foto é animada
+          localmente; a amostra de voz é reproduzida, não clonada.
         </p>
       </div>
 
@@ -314,7 +384,10 @@ export default function AiTwin() {
               {avatars.map((a) => (
                 <button
                   key={a.id ?? a.key}
-                  onClick={() => setAvatarId(a.id ?? null)}
+                  onClick={() => {
+                    setAvatarId(a.id ?? null)
+                    setAvatarPreview(a)
+                  }}
                   className="group relative overflow-hidden rounded-xl border"
                   style={{
                     borderColor: a.id === avatarId ? 'var(--accent)' : 'var(--border)',
@@ -322,8 +395,8 @@ export default function AiTwin() {
                   title={a.name}
                 >
                   <img src={a.imageDataUrl} alt={a.name} className="h-16 w-16 object-cover" />
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
-                    <span className="text-[10px] opacity-0 group-hover:opacity-100">✕</span>
+                  <span className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 to-transparent pb-1">
+                    <span className="text-[10px] font-semibold text-white">Ampliar</span>
                   </span>
                 </button>
               ))}
@@ -373,6 +446,10 @@ export default function AiTwin() {
                 <input
                   value={fluxPrompt}
                   onChange={(e) => setFluxPrompt(e.target.value)}
+                  lang="pt-BR"
+                  spellCheck
+                  autoCorrect="on"
+                  autoCapitalize="sentences"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void generateFlux()
                   }}
@@ -399,7 +476,11 @@ export default function AiTwin() {
               {voices.map((v) => (
                 <button
                   key={v.id ?? v.key}
-                  onClick={() => setVoiceId(v.id ?? null)}
+                  onClick={() => {
+                    setVoiceId(v.id ?? null)
+                    setSource('sample')
+                    setSampleId(0)
+                  }}
                   className="rounded-lg border px-3 py-1.5 text-xs"
                   style={{
                     borderColor: v.id === voiceId ? 'var(--accent)' : 'var(--border)',
@@ -430,8 +511,8 @@ export default function AiTwin() {
 
             <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Grave referências da sua voz para reutilizar no avatar. Esta versão reproduz a
-                amostra; ela ainda não clona a voz para textos novos:
+                Grave um trecho para o avatar reproduzir com sua voz real. Esta função usa o áudio
+                gravado exatamente como está; ela não transforma textos novos na sua voz.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 {!recorder ? (
@@ -477,19 +558,25 @@ export default function AiTwin() {
                 <input
                   value={voiceName}
                   onChange={(e) => setVoiceName(e.target.value)}
-                  placeholder="Nome do perfil de voz"
+                  lang="pt-BR"
+                  spellCheck
+                  autoCorrect="on"
+                  placeholder="Nome exibido, ex.: Minha voz principal"
                   className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-xs outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 />
                 <button
                   onClick={() => void saveVoice()}
-                  disabled={busy || !pendingSamples.length}
+                  disabled={busy || !pendingSamples.length || !voiceName.trim()}
                   className="rounded-lg px-3 py-2 text-xs font-semibold text-black disabled:opacity-40"
                   style={{ background: 'var(--accent)' }}
                 >
-                  Salvar voz
+                  Salvar perfil
                 </button>
               </div>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+                O nome é obrigatório porque identifica o perfil nos próximos passos.
+              </p>
             </div>
           </section>
 
@@ -521,8 +608,12 @@ export default function AiTwin() {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                lang="pt-BR"
+                spellCheck
+                autoCorrect="on"
+                autoCapitalize="sentences"
                 rows={4}
-                placeholder="Texto que o avatar deve falar (TTS via Cloudflare)"
+                placeholder="Texto que o avatar deve falar em português"
                 className="w-full resize-y rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
               />
@@ -546,7 +637,7 @@ export default function AiTwin() {
                       color: sampleId === i ? 'var(--accent)' : 'var(--muted)',
                     }}
                   >
-                    Amostra {i + 1} ({s.duration.toFixed(1)}s)
+                    {voice.name} · trecho {i + 1} ({s.duration.toFixed(1)}s)
                   </button>
                 ))}
               </div>
@@ -579,18 +670,26 @@ export default function AiTwin() {
                     {a}
                   </button>
                 ))}
-                <select
-                  value={motion}
-                  onChange={(e) => setMotion(e.target.value as typeof motion)}
-                  className="rounded border bg-transparent px-2 py-1 text-[11px] outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
-                >
-                  <option value="breathing">respiração</option>
-                  <option value="subtle">sutil</option>
-                  <option value="none">parado</option>
-                </select>
+                <label className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--muted)' }}>
+                  Movimento
+                  <select
+                    value={motion}
+                    onChange={(e) => setMotion(e.target.value as typeof motion)}
+                    className="rounded border bg-transparent px-2 py-1 text-[11px] outline-none"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                  >
+                    <option value="breathing">Respiração</option>
+                    <option value="subtle">Movimento leve</option>
+                    <option value="none">Corpo parado</option>
+                  </select>
+                </label>
               </div>
             </div>
+
+            <p className="mb-3 text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+              “Respiração” movimenta mais o corpo; “Movimento leve” reduz o balanço; “Corpo parado”
+              mantém apenas a animação da boca durante o áudio.
+            </p>
 
             <div className="flex justify-center rounded-lg" style={{ background: '#000' }}>
               <canvas
@@ -622,7 +721,7 @@ export default function AiTwin() {
                 ))}
               <button
                 onClick={() => void toggleRecording()}
-                disabled={!avatar || !talk.current?.duration || busy}
+                disabled={!avatar || busy}
                 className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
                 style={{
                   borderColor: isRecording ? 'var(--ok)' : 'var(--danger)',
@@ -671,6 +770,23 @@ export default function AiTwin() {
           </section>
         </div>
       </div>
+
+      {avatarPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label={`Prévia ampliada de ${avatarPreview.name}`}>
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+            <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: 'var(--border)' }}>
+              <div>
+                <p className="font-semibold text-white">{avatarPreview.name}</p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Prévia do rosto selecionado</p>
+              </div>
+              <button onClick={() => setAvatarPreview(null)} className="min-h-10 rounded-xl border px-3 text-sm font-semibold text-white" style={{ borderColor: 'rgba(255,255,255,.28)', background: 'rgba(255,255,255,.08)' }}>
+                Fechar
+              </button>
+            </div>
+            <img src={avatarPreview.imageDataUrl} alt={avatarPreview.name} className="max-h-[72dvh] w-full object-contain" style={{ background: '#050608' }} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
